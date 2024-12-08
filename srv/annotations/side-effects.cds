@@ -1,0 +1,1 @@
+using InvCatalogService as service from '../cat-service';

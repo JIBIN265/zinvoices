@@ -1,0 +1,110 @@
+{
+  "name": "zinvoices",
+  "version": "1.0.0",
+  "description": "A simple CAP project.",
+  "repository": "<Add your repository here>",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@cap-js/hana": "^1",
+    "@cap-js/sdm": "^1.2.2",
+    "@sap-cloud-sdk/connectivity": "^3.9.0",
+    "@sap-cloud-sdk/generator": "^3.16.0",
+    "@sap-cloud-sdk/http-client": "^3.16.0",
+    "@sap-cloud-sdk/resilience": "^3.9.0",
+    "@sap-cloud-sdk/util": "^3.16.0",
+    "@sap/cds-hana": "^2",
+    "@sap/eslint-plugin-cds": "^3.0.3",
+    "@sap/ux-cds-odata-language-server-extension": "^1.12.0",
+    "@sap/xsenv": "^5.2.0",
+    "@sap/xssec": "^4",
+    "axios": "^1.6.4",
+    "capval": "^2.0.5",
+    "dotenv": "^16.3.1",
+    "express": "^4",
+    "passport": "^0",
+    "querystring": "^0.2.1"
+  },
+  "peerDependencies": {
+    "@sap/cds": "^8.5.1"
+  },
+  "devDependencies": {
+    "@cap-js/cds-types": "^0.7.0",
+    "@cap-js/sqlite": "^1",
+    "@sap/cds-dk": "^8",
+    "@sap/eslint-plugin-cds": "^3",
+    "mbt": "^1.2.28",
+    "rimraf": "^3.0.2"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "cds": "npm i @sap/cds",
+    "undeploy": "cf undeploy zinvoices --delete-services --delete-service-keys --delete-service-brokers",
+    "build": "rimraf resources mta_archives && mbt build --mtar archive",
+    "deploy": "cf deploy mta_archives/archive.mtar --retries 1",
+    "clean": "rimraf \"**/*mta_archives\" \"**/*gen\" \"**/*resources\" \"**/*dist\" \"**/*node_modules\" \"**/*package-lock.json\"",
+    "all": "npm run clean && npm run cds && npm run build && npm run deploy",
+    "watch-zinvoicesmain": "cds watch --open zinvoicesmain/webapp/index.html?sap-ui-xx-viewCache=false",
+    "hybrid": "cds watch --profile hybrid",
+    "kill": "lsof -i :4004 | grep LISTEN | awk '{print $2}' | xargs kill -9 || echo 'No process running on port 4004'"
+  },
+  "cds": {
+    "requires": {
+      "sdm": {
+        "settings": {
+          "repositoryId": "892137e0-6733-4d62-af33-396218298252"
+        }
+      },
+      "[development]": {
+        "kind": "sqlite",
+        "auth": "dummy",
+        "impl": "@cap-js/sqlite",
+        "credentials": {
+          "url": "memory"
+        }
+      },
+      "[production]": {
+        "db": "hana",
+        "auth": "xsuaa",
+        "connectivity": true,
+        "destinations": true,
+        "html5-repo": true,
+        "application-logging": true
+      },
+      "[hybrid]": {
+        "db": "hana",
+        "auth": "dummy"
+      },
+      "DocumentExtraction_Dest": {
+        "kind": "rest",
+        "credentials": {
+          "destination": "DocumentExtraction_Dest",
+          "path": "/document/jobs"
+        }
+      },
+      "CE_PURCHASEORDER_0001": {
+        "kind": "odata",
+        "csrf": true,
+        "csrfInBatch": true,
+        "model": "srv/external/CE_PURCHASEORDER_0001",
+        "credentials": {
+          "destination": "S4Public",
+          "path": "/sap/opu/odata4/sap/api_purchaseorder_2/srvd_a2x/sap/purchaseorder/0001"
+        }
+      },
+      "API_MATERIAL_DOCUMENT_SRV": {
+        "kind": "odata-v2",
+        "csrf": true,
+        "csrfInBatch": true,
+        "model": "srv/external/API_MATERIAL_DOCUMENT_SRV",
+        "credentials": {
+          "destination": "S4Public",
+          "path": "/sap/opu/odata/sap/API_MATERIAL_DOCUMENT_SRV"
+        }
+      }
+    }
+  },
+  "sapux": [
+    "app/zinvoicesmain"
+  ]
+}
