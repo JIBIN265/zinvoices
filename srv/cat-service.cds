@@ -50,11 +50,11 @@ service InvCatalogService @(requires: 'authenticated-user') {
                     QuantityInPurchaseOrderUnit : String;
                 }
             };
+            action copyInvoice(in : $self) returns Invoice;
         };
 
 
     entity InvoiceItem              as projection on persistence.InvoiceEntity.to_InvoiceItem;
-    entity attachments              as projection on persistence.InvoiceEntity.attachments;
 
     entity A_MaterialDocumentHeader as
         projection on gr.A_MaterialDocumentHeader {

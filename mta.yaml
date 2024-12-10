@@ -3,183 +3,199 @@ ID: zinvoices
 description: Invoice Extraction and Three Way Matchings
 version: 1.0.0
 modules:
-- name: zinvoices-srv
-  type: nodejs
-  path: gen/srv
-  requires:
-  - name: zinvoices-db
-  - name: zinvoices-auth
-  - name: zinvoices-logs
-  - name: zinvoices-connectivity
-  - name: zinvoices-destination-service
-  - name: sbpa_dms_repo
-  provides:
-  - name: srv-api
-    properties:
-      srv-url: ${default-url}
-  parameters:
-    buildpack: nodejs_buildpack
-    readiness-health-check-http-endpoint: /health
-    readiness-health-check-type: http
-  build-parameters:
-    builder: npm
-    ignore: ["node_modules/"]
-- name: zinvoices-db-deployer
-  type: hdb
-  path: gen/db
-  requires:
-  - name: zinvoices-db
-  - name: zinvoices-logs
-  parameters:
-    buildpack: nodejs_buildpack
-- name: zinvoices-destination-content
-  type: com.sap.application.content
-  requires:
-  - name: zinvoices-destination-service
-    parameters:
-      content-target: true
-  - name: zinvoices-repo-host
-    parameters:
-      service-key:
-        name: zinvoices-repo-host-key
-  - name: zinvoices-auth
-    parameters:
-      service-key:
-        name: uaa_invoices-key
-  parameters:
-    content:
-      instance:
-        destinations:
-        - Name: hana_app_zinvoices_repo_host
-          ServiceInstanceName: zinvoices-html5-srv
-          ServiceKeyName: zinvoices-repo-host-key
-          sap.cloud.service: hana.app
-        - Authentication: OAuth2UserTokenExchange
-          Name: hana_app_uaa_zinvoices
-          ServiceInstanceName: zinvoices-xsuaa-service
-          ServiceKeyName: uaa_zinvoices-key
-          sap.cloud.service: hana.app
-        existing_destinations_policy: ignore
-  build-parameters:
-    no-source: true
-- name: zinvoices-router
-  type: approuter.nodejs
-  path: app/router
-  requires:
-  - name: srv-api
-    group: destinations
-    properties:
-      forwardAuthToken: true
-      name: srv-api
-      url: ~{srv-url}
-  - name: zinvoices-auth
-  - name: zinvoices-destination-service
-    group: destinations
-    properties:
-      forwardAuthToken: false
-      name: ui5
-      url: https://ui5.sap.com
-  parameters:
-    disk-quota: 256M
-    keep-existing-routes: true
-    memory: 256M
-  build-parameters:
-    ignore:
-    - .env
-    - node_modules/
-    - default-env.json
-- name: zinvoices-app-content
-  type: com.sap.application.content
-  path: .
-  requires:
-  - name: zinvoices-repo-host
-    parameters:
-      content-target: true
-  build-parameters:
-    build-result: resources
+  - name: zinvoices-srv
+    type: nodejs
+    path: gen/srv
     requires:
-    - artifacts:
-      - zinvoicesmain.zip
-      name: zinvoicesmain
-      target-path: resources/
-- name: zinvoicesmain
-  type: html5
-  path: app/zinvoicesmain
-  build-parameters:
-    build-result: dist
-    builder: custom
-    commands:
-    - npm install
-    - npm run build:cf
-    supported-platforms: []
-resources:
-- name: sbpa_dms_repo
-  type: org.cloudfoundry.existing-service
-- name: zinvoices-db
-  type: com.sap.xs.hdi-container
-  parameters:
-    service: hana
-    service-plan: hdi-shared
-- name: zinvoices-auth
-  type: org.cloudfoundry.managed-service
-  parameters:
-    config:
-      tenant-mode: dedicated
-      xsappname: zinvoices-${org}-${space}
-    path: ./xs-security.json
-    service: xsuaa
-    service-name: zinvoices-xsuaa-service
-    service-plan: application
-- name: zinvoices-destination-service
-  type: org.cloudfoundry.managed-service
-  parameters:
-    config:
-      HTML5Runtime_enabled: true
-      init_data:
+      - name: zinvoices-db
+      - name: zinvoices-auth
+      - name: zinvoices-logs
+      - name: zinvoices-connectivity
+      - name: zinvoices-destination-service
+      - name: sbpa_dms_repo
+      - name: zinvoices-attachments
+    provides:
+      - name: srv-api
+        properties:
+          srv-url: ${default-url}
+    parameters:
+      buildpack: nodejs_buildpack
+      readiness-health-check-http-endpoint: /health
+      readiness-health-check-type: http
+    build-parameters:
+      builder: npm
+      ignore:
+        - node_modules/
+  - name: zinvoices-db-deployer
+    type: hdb
+    path: gen/db
+    requires:
+      - name: zinvoices-db
+      - name: zinvoices-logs
+    parameters:
+      buildpack: nodejs_buildpack
+  - name: zinvoices-destination-content
+    type: com.sap.application.content
+    requires:
+      - name: zinvoices-destination-service
+        parameters:
+          content-target: true
+      - name: zinvoices-repo-host
+        parameters:
+          service-key:
+            name: zinvoices-repo-host-key
+      - name: zinvoices-auth
+        parameters:
+          service-key:
+            name: uaa_invoices-key
+    parameters:
+      content:
         instance:
           destinations:
-          - Authentication: NoAuthentication
-            HTML5.DynamicDestination: true
-            HTML5.ForwardAuthToken: true
-            Name: zinvoices-srv
-            ProxyType: Internet
-            Type: HTTP
-            URL: ~{srv-api/srv-url}
-          - Authentication: NoAuthentication
-            Name: ui5
-            ProxyType: Internet
-            Type: HTTP
-            URL: https://ui5.sap.com
-          existing_destinations_policy: update
-      version: 1.0.0
-    service: destination
-    service-name: zinvoices-destination-service
-    service-plan: lite
-  requires:
-  - name: srv-api
-- name: zinvoices-repo-host
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: html5-apps-repo
-    service-name: zinvoices-html5-srv
-    service-plan: app-host
-- name: zinvoices-logs
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: application-logs
-    service-plan: lite
-- name: zinvoices-connectivity
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: connectivity
-    service-plan: lite
+            - Name: hana_app_zinvoices_repo_host
+              ServiceInstanceName: zinvoices-html5-srv
+              ServiceKeyName: zinvoices-repo-host-key
+              sap.cloud.service: hana.app
+            - Authentication: OAuth2UserTokenExchange
+              Name: hana_app_uaa_zinvoices
+              ServiceInstanceName: zinvoices-xsuaa-service
+              ServiceKeyName: uaa_zinvoices-key
+              sap.cloud.service: hana.app
+          existing_destinations_policy: ignore
+    build-parameters:
+      no-source: true
+  - name: zinvoices-router
+    type: approuter.nodejs
+    path: app/router
+    requires:
+      - name: srv-api
+        group: destinations
+        properties:
+          forwardAuthToken: true
+          name: srv-api
+          url: ~{srv-url}
+      - name: zinvoices-auth
+      - name: zinvoices-destination-service
+        group: destinations
+        properties:
+          forwardAuthToken: false
+          name: ui5
+          url: https://ui5.sap.com
+      - name: zinvoices-logs
+      - name: zinvoices-html5-runtime
+    parameters:
+      disk-quota: 256M
+      keep-existing-routes: true
+      memory: 256M
+    build-parameters:
+      ignore:
+        - .env
+        - node_modules/
+        - default-env.json
+  - name: zinvoices-app-content
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: zinvoices-repo-host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: resources
+      requires:
+        - artifacts:
+            - zinvoicesmain.zip
+          name: zinvoicesmain
+          target-path: resources/
+  - name: zinvoicesmain
+    type: html5
+    path: app/zinvoicesmain
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+        - npm ci
+        - npm run build
+      supported-platforms: []
+resources:
+  - name: sbpa_dms_repo
+    type: org.cloudfoundry.existing-service
+  - name: zinvoices-db
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+  - name: zinvoices-auth
+    type: org.cloudfoundry.managed-service
+    parameters:
+      config:
+        tenant-mode: dedicated
+        xsappname: zinvoices-${org}-${space}
+      path: ./xs-security.json
+      service: xsuaa
+      service-name: zinvoices-xsuaa-service
+      service-plan: application
+  - name: zinvoices-destination-service
+    type: org.cloudfoundry.managed-service
+    parameters:
+      config:
+        HTML5Runtime_enabled: true
+        init_data:
+          instance:
+            destinations:
+              - Authentication: NoAuthentication
+                HTML5.DynamicDestination: true
+                HTML5.ForwardAuthToken: true
+                Name: zinvoices-srv
+                ProxyType: Internet
+                Type: HTTP
+                URL: ~{srv-api/srv-url}
+              - Authentication: NoAuthentication
+                Name: ui5
+                ProxyType: Internet
+                Type: HTTP
+                URL: https://ui5.sap.com
+            existing_destinations_policy: update
+        version: 1.0.0
+      service: destination
+      service-name: zinvoices-destination-service
+      service-plan: lite
+    requires:
+      - name: srv-api
+  - name: zinvoices-repo-host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-name: zinvoices-html5-srv
+      service-plan: app-host
+  - name: zinvoices-logs
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: application-logs
+      service-plan: lite
+  - name: zinvoices-connectivity
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: connectivity
+      service-plan: lite
+  - name: zinvoices-attachments
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: objectstore
+      service-plan: standard
+  - name: zinvoices-html5-runtime
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-runtime
 parameters:
   deploy_mode: html5-repo
   enable-parallel-deployments: true
 build-parameters:
   before-all:
-  - builder: custom
-    commands:
-    - npm ci
-    - npx cds build --production
-    - npx rimraf gen/db/src/gen/data
+    - builder: custom
+      commands:
+        - npm ci
+        - npx cds build --production
+        - npx rimraf gen/db/src/gen/data

@@ -40,16 +40,6 @@ annotate service.Invoice with @(
                 Label: '{i18n>GrossAmount}',
                 Value: invGrossAmount,
             },
-            {
-                $Type: 'UI.DataField',
-                Label: '{i18n>Status}',
-                Value: status,
-            },
-            {
-                $Type: 'UI.DataField',
-                Label: '{i18n>Comments}',
-                Value: comments,
-            },
         ],
     },
     UI.Facets                    : [
@@ -126,6 +116,11 @@ annotate service.Invoice with @(
             Action: 'InvCatalogService.threewaymatch',
             Label : '{i18n>threeWayMatch}',
         },
+        {
+            $Type : 'UI.DataFieldForAction',
+            Action : 'InvCatalogService.copyInvoice',
+            Label : '{i18n>copy}',
+        },
     ],
     UI.HeaderFacets              : [{
         $Type : 'UI.ReferenceFacet',
@@ -155,6 +150,11 @@ annotate service.Invoice with @(
                 Value: newInvoice,
                 Label: '{i18n>InvoiceNumber}',
             },
+            {
+                $Type : 'UI.DataField',
+                Value : status,
+                Label : '{i18n>Status}',
+            },
         ],
     },
     UI.HeaderInfo : {
@@ -164,6 +164,55 @@ annotate service.Invoice with @(
         },
         TypeName : '',
         TypeNamePlural : '',
+    },
+    UI.SelectionPresentationVariant #tableView : {
+        $Type : 'UI.SelectionPresentationVariantType',
+        PresentationVariant : {
+            $Type : 'UI.PresentationVariantType',
+            Visualizations : [
+                '@UI.LineItem',
+            ],
+        },
+        SelectionVariant : {
+            $Type : 'UI.SelectionVariantType',
+            SelectOptions : [
+            ],
+        },
+        Text : 'Table View',
+    },
+    Analytics.AggregatedProperty #documentId_countdistinct : {
+        $Type : 'Analytics.AggregatedPropertyType',
+        Name : 'documentId_countdistinct',
+        AggregatableProperty : documentId,
+        AggregationMethod : 'countdistinct',
+        ![@Common.Label] : '{i18n>DocumentIdCountDistinct}',
+    },
+    UI.Chart #chartView : {
+        $Type : 'UI.ChartDefinitionType',
+        ChartType : #Column,
+        Dimensions : [
+            supInvParty,
+            createdBy,
+        ],
+        DynamicMeasures : [
+            '@Analytics.AggregatedProperty#documentId_countdistinct',
+        ],
+        Title : '{i18n>DocumentsBySupplierInvoice}',
+    },
+    UI.SelectionPresentationVariant #chartView : {
+        $Type : 'UI.SelectionPresentationVariantType',
+        PresentationVariant : {
+            $Type : 'UI.PresentationVariantType',
+            Visualizations : [
+                '@UI.Chart#chartView',
+            ],
+        },
+        SelectionVariant : {
+            $Type : 'UI.SelectionVariantType',
+            SelectOptions : [
+            ],
+        },
+        Text : 'Chart View',
     },
 );
 
@@ -179,6 +228,16 @@ annotate service.InvoiceItem with @(UI.LineItem #ItemDetails: [
         Label: '{i18n>SupplierInvoice}',
     },
     {
+        $Type : 'UI.DataField',
+        Value : fiscalYear,
+        Label : '{i18n>FiscalYear}',
+    },
+    {
+        $Type : 'UI.DataField',
+        Value : documentCurrency,
+        Label : '{i18n>DocumentCurrency}',
+    },
+    {
         $Type: 'UI.DataField',
         Value: supInvItemAmount,
         Label: '{i18n>InvoiceItemAmount}',
@@ -186,7 +245,7 @@ annotate service.InvoiceItem with @(UI.LineItem #ItemDetails: [
     {
         $Type: 'UI.DataField',
         Value: purchaseOrderItem,
-        Label: '{i18n>PO Item}',
+        Label: '{i18n>PoItem}',
     },
     {
         $Type: 'UI.DataField',
@@ -224,3 +283,31 @@ annotate service.InvoiceItem with @(UI.LineItem #ItemDetails: [
         Label: '{i18n>TaxCode}',
     },
 ]);
+
+
+annotate service.Invoice with @Aggregation.ApplySupported: {
+    Transformations       : [
+        'aggregate',
+        'topcount',
+        'bottomcount',
+        'identity',
+        'concat',
+        'groupby',
+        'filter',
+        'expand',
+        'search'
+    ],
+    Rollup                : #None,
+    PropertyRestrictions  : true,
+    GroupableProperties   : [
+        companyCode,
+        supInvParty,
+        postingDate,
+        createdBy,
+    ],
+    AggregatableProperties: [{Property: documentId, }],
+};
+annotate service.Invoice with {
+    supInvParty @Common.Label : '{i18n>SupplierInvoiceParty}'
+};
+

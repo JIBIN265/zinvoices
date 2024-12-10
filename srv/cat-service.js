@@ -52,14 +52,20 @@ class InvCatalogService extends cds.ApplicationService {
 
         this.before("SAVE", Invoice, async (req) => {
             if (!req.data.fiscalYear) {
-
-                //getting base64 content
-                const content = await cds.run(SELECT.one.from(attachments.drafts).
-                    columns('ID', 'url', 'content', 'mimeType', 'filename').where({ up__ID: req.data.ID }));
+                const allRecords = await this.run(
+                    SELECT.from(Invoice.drafts)
+                        .columns(cpx => {
+                            cpx`*`,
+                                cpx.attachments(cfy => { cfy`content` });
+                        })
+                        .where({
+                            ID: req.data.ID
+                        })
+                );
                 let fileBuffer;
-                if (content?.content) {
+                if (allRecords[0].attachments[0].content) {
                     try {
-                        fileBuffer = await streamToBuffer(content.content);
+                        fileBuffer = await streamToBuffer(allRecords[0].attachments[0].content);
                     } catch (error) {
                         req.error(400, "Error converting stream to Base64");
                         if (req.errors) { req.reject(); }
@@ -68,7 +74,7 @@ class InvCatalogService extends cds.ApplicationService {
                     //creating form data
                     const form = new FormData();
                     try {
-                        form.append('file', fileBuffer, content.filename || 'file', content.mimeType || 'application/octet-stream');
+                        form.append('file', fileBuffer, req.data.attachments[0].filename || 'file', req.data.attachments[0].mimeType || 'application/octet-stream');
                     } catch (error) {
                         const response = `Status update failed: ${error.message}`
                         req.error(400, "Error converting stream to Base64",);
@@ -121,33 +127,125 @@ class InvCatalogService extends cds.ApplicationService {
 
                             if (!jobDone) {
                                 status = `Extraction failed after ${MAX_RETRIES} attempts`;
-                                // await updateDraftOnly(req.data.SalesOrder.ID, status);
+                                await updateDraftOnly(req.data.Invoice.ID, status);
                                 return;
                             }
                         }
                     } catch (error) {
                         status = `Document extraction failed: ${error.message}`;
-                        // await updateDraftOnly(req.data.SalesOrder.ID, status);
+                        await updateDraftOnly(req.data.Invoice.ID, status);
                         return;
                     }
 
                     // Map extraction results
-                    // const headerFields = extractionResults.headerFields.reduce((acc, field) => {
-                    //     acc[field.name] = field.value;
-                    //     return acc;
-                    // }, {});
+                    const headerFields = extractionResults.headerFields.reduce((acc, field) => {
+                        acc[field.name] = field.value;
+                        return acc;
+                    }, {});
 
-                    // const lineItems = extractionResults.lineItems.map(item => {
-                    //     return item.reduce((acc, field) => {
-                    //         acc[field.name] = field.value;
-                    //         return acc;
-                    //     }, {});
-                    // });
+                    const lineItems = extractionResults.lineItems.map(item => {
+                        return item.reduce((acc, field) => {
+                            acc[field.name] = field.value;
+                            return acc;
+                        }, {});
+                    });
+
+                    // Populate req.data.Invoice with mapped values
+                    req.data.fiscalYear = new Date(headerFields.documentDate).getFullYear().toString();
+                    req.data.documentCurrency = headerFields.currencyCode;
+                    req.data.documentDate = new Date(headerFields.documentDate);
+                    req.data.postingDate = new Date(headerFields.documentDate);
+                    req.data.supInvParty = headerFields.senderName.substring(0, 10); // Truncate if necessary
+                    req.data.invGrossAmount = parseFloat(headerFields.grossAmount);
+                    req.data.comments = "Extracted from document";
+                    req.data.to_InvoiceItem = lineItems.map((lineItem, index) => ({
+                        supplierInvoice: headerFields.documentNumber,
+                        fiscalYear: req.data.fiscalYear,
+                        sup_InvoiceItem: (index + 1).toString().padStart(5, "0"),
+                        purchaseOrder: headerFields.purchaseOrderNumber,
+                        purchaseOrderItem: (index + 1).toString().padStart(5, "0"),
+                        documentCurrency: headerFields.currencyCode,
+                        supInvItemAmount: parseFloat(lineItem.netAmount),
+                        poQuantityUnit: lineItem.unitOfMeasure,
+                        quantityPOUnit: parseFloat(lineItem.quantity)
+                    }));
+
+                    // await threeWayMatch(req);
 
                 }
             } else {
-
+                await threeWayMatch(req);
+                debugger;
             }
+        });
+
+        this.on('copyInvoice', async (req) => {
+            const { ID } = req.params[0];
+            const originalInvoice = await db.run(
+                SELECT.one.from(Invoice)
+                    .columns(inv => {
+                        inv`*`,                   // Select all columns from Invoice
+                            inv.to_InvoiceItem(int => { int`*` }) // Select all columns from Invoice Item
+                    })
+                    .where({ ID: ID })
+            );
+
+            if (!originalInvoice) {
+                const draftInvoice = await db.run(
+                    SELECT.one.from(Invoice.drafts)
+                        .columns(inv => {
+                            inv`*`,                   // Select all columns from Invoice
+                                inv.to_InvoiceItem(int => { int`*` }) // Select all columns from Invoice Item
+                        })
+                        .where({ ID: ID })
+                );
+                if (draftInvoice) {
+                    req.error(404, 'You cannot copy a Draft Order');
+                }
+                else {
+                    req.error(404, 'Please contact SAP IT');
+                }
+                if (req.errors) { req.reject(); }
+            }
+
+            const copiedInvoice = Object.assign({}, originalInvoice);
+            delete copiedInvoice.ID;  // Remove the ID to ensure a new entity is created
+            delete copiedInvoice.createdAt;
+            delete copiedInvoice.createdBy;
+            delete copiedInvoice.modifiedAt;
+            delete copiedInvoice.modifiedBy;
+            delete copiedInvoice.HasActiveEntity;
+            delete copiedInvoice.HasDraftEntity;
+            delete copiedInvoice.IsActiveEntity;
+            copiedInvoice.DraftAdministrativeData_DraftUUID = cds.utils.uuid();
+            // Ensure all related entities are copied
+            if (originalInvoice.to_InvoiceItem) {
+                copiedInvoice.to_InvoiceItem = originalInvoice.to_InvoiceItem.map(InvoiceItem => {
+                    const copiedInvoiceItem = Object.assign({}, InvoiceItem);
+                    delete copiedInvoiceItem.ID; // Remove the ID to create a new related entity
+                    delete copiedInvoiceItem.up__ID;
+                    delete copiedInvoiceItem.createdAt;
+                    delete copiedInvoiceItem.createdBy;
+                    delete copiedInvoiceItem.modifiedAt;
+                    delete copiedInvoiceItem.modifiedBy;
+                    copiedInvoiceItem.DraftAdministrativeData_DraftUUID = cds.utils.uuid();
+                    return copiedInvoiceItem;
+                });
+            }
+            //create a draft
+            const oInvoice = await this.send({
+                query: INSERT.into(Invoice).entries(copiedInvoice),
+                event: "NEW",
+            });
+
+            //return the draft
+            if (!oInvoice) {
+                req.notify("Copy failed");
+            }
+            else {
+                req.notify("Order has been successfully copied and saved as a new draft.");
+            }
+
         });
 
         async function streamToBuffer(stream) {
@@ -159,44 +257,22 @@ class InvCatalogService extends cds.ApplicationService {
             });
         }
 
+        async function updateDraftOnly(ID, status) {
+            await db.run(
+                UPDATE(Invoice.drafts)
+                    .set({ status: status })
+                    .where({ ID: ID })
+            );
+        }
 
-
-        this.on('threewaymatch', 'Invoice', async req => {
+        async function threeWayMatch(req) {
             try {
                 console.log("Three-way Verification Code Check");
-                const { ID } = req.params[0];
-                if (!ID) {
-                    return req.error(400, "Invoice ID is required");
-                }
-
-                // Fetch invoice
-                const invoice = await db.run(SELECT.one.from(Invoice).where({ ID: ID }));
-                if (!invoice) {
-                    return req.error(404, `Invoice with ID ${ID} not found`);
-                }
-
-                // Fetch invoice items
-                const invoiceItems = await db.run(SELECT.from(InvoiceItem).where({ up__ID: ID }));
-                if (!invoiceItems || invoiceItems.length === 0) {
-                    return req.error(404, `No items found for Invoice ${ID}`);
-                }
 
                 let allItemsMatched = true;
-                let itemCounter = 1;
                 let allStatusReasons = [];
-                let result = {
-                    FiscalYear: "",
-                    CompanyCode: "",
-                    DocumentDate: null,
-                    PostingDate: null,
-                    SupplierInvoiceIDByInvcgParty: "",
-                    DocumentCurrency: "",
-                    InvoiceGrossAmount: invoice.invGrossAmount.toString(),
-                    status: "",
-                    to_SuplrInvcItemPurOrdRef: []
-                };
 
-                for (const invoiceItem of invoiceItems) {
+                for (const invoiceItem of req.data.to_InvoiceItem) {
                     const { purchaseOrder, purchaseOrderItem, sup_InvoiceItem, quantityPOUnit, supInvItemAmount } = invoiceItem;
 
                     // Fetch PO details
@@ -215,25 +291,35 @@ class InvCatalogService extends cds.ApplicationService {
                     }
 
                     // Fetch GR details
-                    const materialDocumentData = await grs.run(
-                        SELECT.one.from(A_MaterialDocumentHeader)
-                            .where({ ReferenceDocument: purchaseOrder })
-                    );
+                    let materialDocumentData;
+                    try {
+                        materialDocumentData = await grs.run(
+                            SELECT.one.from(A_MaterialDocumentHeader)
+                                .where({ ReferenceDocument: purchaseOrder })
+                        );
+
+                    } catch (error) {
+                        req.error(500, `Unexpected error: ${error.message}`);
+                    }
 
                     let materialItemData;
                     if (materialDocumentData) {
-                        materialItemData = await grs.run(
-                            SELECT.one.from(A_MaterialDocumentItem)
-                                .where({
-                                    MaterialDocument: materialDocumentData.MaterialDocument,
-                                    MaterialDocumentYear: materialDocumentData.MaterialDocumentYear,
-                                    PurchaseOrderItem: purchaseOrderItem
-                                })
-                        );
+                        try {
+                            materialItemData = await grs.run(
+                                SELECT.one.from(A_MaterialDocumentItem)
+                                    .where({
+                                        MaterialDocument: materialDocumentData.MaterialDocument,
+                                        MaterialDocumentYear: materialDocumentData.MaterialDocumentYear,
+                                        PurchaseOrderItem: purchaseOrderItem
+                                    })
+                            );
+                        } catch (error) {
+                            req.error(500, `Unexpected error: ${error.message}`);
+                        }
                     }
 
                     // Determine item status
-                    let itemStatus = 'Matched';
+                    let itemStatus = 'Three Way Matched';
                     let statusReasons = [];
 
                     // Convert quantityPOUnit from string to number
@@ -271,61 +357,205 @@ class InvCatalogService extends cds.ApplicationService {
                         }
                     }
 
-                    if (itemStatus !== 'Matched') {
+                    if (itemStatus !== 'Three Way Matched') {
                         allItemsMatched = false;
                         if (statusReasons.length > 0) {
                             allStatusReasons.push(`Item ${purchaseOrderItem}: ${statusReasons.join(', ')}`);
                         }
                     }
-
-                    // Populate result object
-                    result.FiscalYear = materialItemData ? materialItemData.ReferenceDocumentFiscalYear : "";
-                    result.CompanyCode = purchaseOrderData.CompanyCode;
-                    result.DocumentDate = materialDocumentData ? materialDocumentData.DocumentDate : null;
-                    result.PostingDate = materialDocumentData ? materialDocumentData.PostingDate : null;
-                    result.SupplierInvoiceIDByInvcgParty = purchaseOrderData.SupplierInvoiceIDByInvcgParty;
-                    result.DocumentCurrency = purchaseOrderData.DocumentCurrency;
-                    result.to_SuplrInvcItemPurOrdRef.push({
-                        SupplierInvoice: invoiceItem.supplierInvoice,
-                        FiscalYear: materialItemData ? materialItemData.ReferenceDocumentFiscalYear : "",
-                        SupplierInvoiceItem: itemCounter.toString(),
-                        PurchaseOrder: purchaseOrder,
-                        PurchaseOrderItem: purchaseOrderItem,
-                        ReferenceDocument: materialItemData ? materialItemData.MaterialDocument : "",
-                        ReferenceDocumentFiscalYear: materialItemData ? materialItemData.ReferenceDocumentFiscalYear : "",
-                        ReferenceDocumentItem: materialItemData ? materialItemData.MaterialDocumentItem : "",
-                        TaxCode: purchaseOrderItemData.TaxCode,
-                        DocumentCurrency: purchaseOrderItemData.DocumentCurrency,
-                        SupplierInvoiceItemAmount: supInvItemAmount.toString(),
-                        PurchaseOrderQuantityUnit: purchaseOrderItemData.PurchaseOrderQuantityUnit,
-                        QuantityInPurchaseOrderUnit: purchaseOrderItemData.OrderQuantity.toString(),
-                    });
-
-                    itemCounter += 1;
                 }
 
                 // Determine overall invoice status and update the database
-                const overallStatus = allItemsMatched ? 'Matched' : 'Discrepancy';
+                const overallStatus = allItemsMatched ? 'Three Way Matched' : 'Discrepancy';
                 let statusWithReasons = overallStatus;
                 let failFlag = 'S';
 
                 if (overallStatus === 'Discrepancy') {
                     statusWithReasons += `: ${allStatusReasons.join('; ')}`;
                 }
-                const overallStatusFlag = failFlag ? 'E' : 'S';
-                await db.run(UPDATE(Invoice).set({ status: statusWithReasons, statusFlag: overallStatusFlag }).where({ ID: ID }));
+                const overallStatusFlag = overallStatus === 'Three Way Matched' ? 'S' : 'E';
 
-                // Set the status in the result object
-                result.status = statusWithReasons;
+                req.data.status = statusWithReasons;
+                req.data.statusFlag = overallStatusFlag;
 
-                // Send response
-                return req.reply(result);
+                return req;
 
             } catch (error) {
                 console.error("Unexpected error in ThreeWayMatch:", error);
-                return req.error(500, `Unexpected error: ${error.message}`);//COMMENT
+                return req.error(500, `Unexpected error: ${error.message}`);
             }
-        });
+        }
+
+
+        async function postInvoice() { }
+
+
+
+        // this.on('threewaymatch', 'Invoice', async req => {
+        //     try {
+        //         console.log("Three-way Verification Code Check");
+        //         const { ID } = req.params[0];
+        //         if (!ID) {
+        //             return req.error(400, "Invoice ID is required");
+        //         }
+
+        //         // Fetch invoice
+        //         const invoice = await db.run(SELECT.one.from(Invoice).where({ ID: ID }));
+        //         if (!invoice) {
+        //             return req.error(404, `Invoice with ID ${ID} not found`);
+        //         }
+
+        //         // Fetch invoice items
+        //         const invoiceItems = await db.run(SELECT.from(InvoiceItem).where({ up__ID: ID }));
+        //         if (!invoiceItems || invoiceItems.length === 0) {
+        //             return req.error(404, `No items found for Invoice ${ID}`);
+        //         }
+
+        //         let allItemsMatched = true;
+        //         let itemCounter = 1;
+        //         let allStatusReasons = [];
+        //         let result = {
+        //             FiscalYear: "",
+        //             CompanyCode: "",
+        //             DocumentDate: null,
+        //             PostingDate: null,
+        //             SupplierInvoiceIDByInvcgParty: "",
+        //             DocumentCurrency: "",
+        //             InvoiceGrossAmount: invoice.invGrossAmount.toString(),
+        //             status: "",
+        //             to_SuplrInvcItemPurOrdRef: []
+        //         };
+
+        //         for (const invoiceItem of invoiceItems) {
+        //             const { purchaseOrder, purchaseOrderItem, sup_InvoiceItem, quantityPOUnit, supInvItemAmount } = invoiceItem;
+
+        //             // Fetch PO details
+        //             const purchaseOrderData = await pos.run(SELECT.one.from(PurchaseOrder).where({ PurchaseOrder: purchaseOrder }));
+        //             if (!purchaseOrderData) {
+        //                 allItemsMatched = false;
+        //                 allStatusReasons.push(`Item ${sup_InvoiceItem}: Purchase Order not found`);
+        //                 continue;
+        //             }
+
+        //             const purchaseOrderItemData = await pos.run(SELECT.one.from(PurchaseOrderItem).where({ PurchaseOrder: purchaseOrder, PurchaseOrderItem: purchaseOrderItem }));
+        //             if (!purchaseOrderItemData) {
+        //                 allItemsMatched = false;
+        //                 allStatusReasons.push(`Item ${sup_InvoiceItem}: Purchase Order Item not found`);
+        //                 continue;
+        //             }
+
+        //             // Fetch GR details
+        //             const materialDocumentData = await grs.run(
+        //                 SELECT.one.from(A_MaterialDocumentHeader)
+        //                     .where({ ReferenceDocument: purchaseOrder })
+        //             );
+
+        //             let materialItemData;
+        //             if (materialDocumentData) {
+        //                 materialItemData = await grs.run(
+        //                     SELECT.one.from(A_MaterialDocumentItem)
+        //                         .where({
+        //                             MaterialDocument: materialDocumentData.MaterialDocument,
+        //                             MaterialDocumentYear: materialDocumentData.MaterialDocumentYear,
+        //                             PurchaseOrderItem: purchaseOrderItem
+        //                         })
+        //                 );
+        //             }
+
+        //             // Determine item status
+        //             let itemStatus = 'Matched';
+        //             let statusReasons = [];
+
+        //             // Convert quantityPOUnit from string to number
+        //             const quantityPOUnitNumber = Number(quantityPOUnit);
+
+        //             // Ensure supInvItemAmount and purchaseOrderItemData.NetPriceAmount are numbers
+        //             const supInvItemAmountNumber = Number(supInvItemAmount);
+        //             const netPriceAmountNumber = Number(purchaseOrderItemData.NetPriceAmount);
+
+        //             // Compare quantityPOUnit with purchaseOrderItemData.OrderQuantity
+        //             if (quantityPOUnitNumber !== purchaseOrderItemData.OrderQuantity) {
+        //                 itemStatus = 'Discrepancy';
+        //                 statusReasons.push('Quantity mismatch with PO');
+        //             }
+
+        //             // Compare supInvItemAmount with purchaseOrderItemData.NetPriceAmount
+        //             if (supInvItemAmountNumber !== netPriceAmountNumber) {
+        //                 itemStatus = 'Discrepancy';
+        //                 statusReasons.push('Amount mismatch with PO');
+        //             }
+
+        //             // Check if materialItemData exists and compare quantities
+        //             if (!materialItemData) {
+        //                 itemStatus = 'Discrepancy';
+        //                 statusReasons.push('No matching Goods Receipt found');
+        //             } else {
+        //                 const materialQuantityNumber = Number(materialItemData.QuantityInBaseUnit);
+        //                 if (quantityPOUnitNumber > materialQuantityNumber) {
+        //                     itemStatus = 'Discrepancy';
+        //                     statusReasons.push('Quantity mismatch with GR (Partial delivery)');
+        //                 }
+        //                 if (quantityPOUnitNumber < materialQuantityNumber) {
+        //                     itemStatus = 'Discrepancy';
+        //                     statusReasons.push('Quantity mismatch with GR (Over-delivery)');
+        //                 }
+        //             }
+
+        //             if (itemStatus !== 'Matched') {
+        //                 allItemsMatched = false;
+        //                 if (statusReasons.length > 0) {
+        //                     allStatusReasons.push(`Item ${purchaseOrderItem}: ${statusReasons.join(', ')}`);
+        //                 }
+        //             }
+
+        //             // Populate result object
+        //             result.FiscalYear = materialItemData ? materialItemData.ReferenceDocumentFiscalYear : "";
+        //             result.CompanyCode = purchaseOrderData.CompanyCode;
+        //             result.DocumentDate = materialDocumentData ? materialDocumentData.DocumentDate : null;
+        //             result.PostingDate = materialDocumentData ? materialDocumentData.PostingDate : null;
+        //             result.SupplierInvoiceIDByInvcgParty = purchaseOrderData.SupplierInvoiceIDByInvcgParty;
+        //             result.DocumentCurrency = purchaseOrderData.DocumentCurrency;
+        //             result.to_SuplrInvcItemPurOrdRef.push({
+        //                 SupplierInvoice: invoiceItem.supplierInvoice,
+        //                 FiscalYear: materialItemData ? materialItemData.ReferenceDocumentFiscalYear : "",
+        //                 SupplierInvoiceItem: itemCounter.toString(),
+        //                 PurchaseOrder: purchaseOrder,
+        //                 PurchaseOrderItem: purchaseOrderItem,
+        //                 ReferenceDocument: materialItemData ? materialItemData.MaterialDocument : "",
+        //                 ReferenceDocumentFiscalYear: materialItemData ? materialItemData.ReferenceDocumentFiscalYear : "",
+        //                 ReferenceDocumentItem: materialItemData ? materialItemData.MaterialDocumentItem : "",
+        //                 TaxCode: purchaseOrderItemData.TaxCode,
+        //                 DocumentCurrency: purchaseOrderItemData.DocumentCurrency,
+        //                 SupplierInvoiceItemAmount: supInvItemAmount.toString(),
+        //                 PurchaseOrderQuantityUnit: purchaseOrderItemData.PurchaseOrderQuantityUnit,
+        //                 QuantityInPurchaseOrderUnit: purchaseOrderItemData.OrderQuantity.toString(),
+        //             });
+
+        //             itemCounter += 1;
+        //         }
+
+        //         // Determine overall invoice status and update the database
+        //         const overallStatus = allItemsMatched ? 'Matched' : 'Discrepancy';
+        //         let statusWithReasons = overallStatus;
+        //         let failFlag = 'S';
+
+        //         if (overallStatus === 'Discrepancy') {
+        //             statusWithReasons += `: ${allStatusReasons.join('; ')}`;
+        //         }
+        //         const overallStatusFlag = failFlag ? 'E' : 'S';
+        //         await db.run(UPDATE(Invoice).set({ status: statusWithReasons, statusFlag: overallStatusFlag }).where({ ID: ID }));
+
+        //         // Set the status in the result object
+        //         result.status = statusWithReasons;
+
+        //         // Send response
+        //         return req.reply(result);
+
+        //     } catch (error) {
+        //         console.error("Unexpected error in ThreeWayMatch:", error);
+        //         return req.error(500, `Unexpected error: ${error.message}`);//COMMENT
+        //     }
+        // });
 
         return super.init();
     }

@@ -5,7 +5,7 @@
     {
       "source": "^/odata/(.*)$",
       "target": "/odata/$1",
-      "destination": "zinvoices-srv-api",
+      "destination": "zinvoices-srv",
       "authenticationType": "xsuaa",
       "csrfProtection": false
     },

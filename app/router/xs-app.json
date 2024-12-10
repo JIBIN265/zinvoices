@@ -18,5 +18,5 @@
       "csrfProtection": true
     }
   ],
-  "welcomeFile": "/zinvoicesmain"
+  "welcomeFile": "app/index.html"
 }

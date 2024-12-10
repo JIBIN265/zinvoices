@@ -25,6 +25,5 @@
    "http://*.localhost:4004/**",
    "https://*.applicationstudio.cloud.sap/**"
   ]
- },
- "authorities-inheritance": false
+ }
 }

@@ -20,10 +20,10 @@ entity InvoiceEntity : cuid, managed, {
   statusFlag       : String(1);
   statusColor      : Association to one StatusValues
                        on statusColor.code = statusFlag;
-  comments         : String(150);
   newInvoice       : String(10);
   to_InvoiceItem   : Composition of many InvoiceItemEntity;
-  attachments      : Composition of many Attachments;
+   @description: 'Attachments Composition'
+  attachments         : Composition of many Attachments;
 }
 
 aspect InvoiceItemEntity : cuid, managed {
