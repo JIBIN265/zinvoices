@@ -4,4 +4,4 @@ S,Success,3,true,true,true
 X,Expired,0,false,false,false
 W,Warning,2,true,true,true
 E,Error,1,true,true,true
-D,Draft,4,true,true,true
+D,Draft,5,true,true,true

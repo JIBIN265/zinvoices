@@ -18,12 +18,14 @@ entity InvoiceEntity : cuid, managed, {
   invGrossAmount   : Decimal(13, 3);
   status           : String(200);
   statusFlag       : String(1);
+  mode             : String(10);
   statusColor      : Association to one StatusValues
                        on statusColor.code = statusFlag;
   newInvoice       : String(10);
   to_InvoiceItem   : Composition of many InvoiceItemEntity;
-   @description: 'Attachments Composition'
-  attachments         : Composition of many Attachments;
+
+  @description: 'Attachments Composition'
+  attachments      : Composition of many Attachments;
 }
 
 aspect InvoiceItemEntity : cuid, managed {

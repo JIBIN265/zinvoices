@@ -13,7 +13,6 @@ modules:
       - name: zinvoices-connectivity
       - name: zinvoices-destination-service
       - name: sbpa_dms_repo
-      - name: zinvoices-attachments
     provides:
       - name: srv-api
         properties:
@@ -179,11 +178,6 @@ resources:
     parameters:
       service: connectivity
       service-plan: lite
-  - name: zinvoices-attachments
-    type: org.cloudfoundry.managed-service
-    parameters:
-      service: objectstore
-      service-plan: standard
   - name: zinvoices-html5-runtime
     type: org.cloudfoundry.managed-service
     parameters:

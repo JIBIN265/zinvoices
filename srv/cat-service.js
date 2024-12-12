@@ -26,9 +26,7 @@ class InvCatalogService extends cds.ApplicationService {
         const db = await cds.connect.to("db");
         const pos = await cds.connect.to('CE_PURCHASEORDER_0001');
         const grs = await cds.connect.to('API_MATERIAL_DOCUMENT_SRV');
-        const NEW_STATUS = 'N';
-        const DRAFT_STATUS = 'D';
-        const FAILURE_STATUS = 'F';
+        const invoiceDest = await cds.connect.to('API_SUPPLIERINVOICE_PROCESS_SRV');
 
         this.DocumentExtraction_Dest = DocumentExtraction_Dest;
 
@@ -36,7 +34,7 @@ class InvCatalogService extends cds.ApplicationService {
             // console.log(req.target.name)
             if (req.target.name !== "InvCatalogService.Invoice.drafts") { return; }
             const { ID } = req.data;
-            req.data.statusFlag = DRAFT_STATUS;
+            req.data.statusFlag = 'D';
 
             const documentId = new SequenceHelper({
                 db: db,
@@ -170,12 +168,12 @@ class InvCatalogService extends cds.ApplicationService {
                         quantityPOUnit: parseFloat(lineItem.quantity)
                     }));
 
-                    // await threeWayMatch(req);
-
+                    await threeWayMatch(req);
+                    await postInvoice(req);
                 }
             } else {
                 await threeWayMatch(req);
-                debugger;
+                await postInvoice(req);
             }
         });
 
@@ -381,13 +379,64 @@ class InvCatalogService extends cds.ApplicationService {
                 return req;
 
             } catch (error) {
-                console.error("Unexpected error in ThreeWayMatch:", error);
-                return req.error(500, `Unexpected error: ${error.message}`);
+                req.data.status = error.message;
+                req.data.statusFlag = 'E';
+                console.error("Unexpected error in ThreeWayMatch:", error.message);
+                return req.error(400, `Unexpected error: ${error.message}`);
             }
         }
 
 
-        async function postInvoice() { }
+        async function postInvoice(req) {
+            try {
+                const {
+                    fiscalYear,
+                    companyCode,
+                    documentDate,
+                    postingDate,
+                    supInvParty,
+                    documentCurrency,
+                    invGrossAmount,
+                    to_InvoiceItem,
+                } = req.data;
+
+                // Prepare the payload
+                const payload = {
+                    FiscalYear: fiscalYear,
+                    CompanyCode: companyCode,
+                    DocumentDate: `/Date(${new Date(documentDate).getTime()})/`,
+                    PostingDate: `/Date(${new Date(postingDate).getTime()})/`,
+                    CreationDate: `/Date(${Date.now()})/`, // Current timestamp
+                    SupplierInvoiceIDByInvcgParty: supInvParty,
+                    DocumentCurrency: documentCurrency,
+                    InvoiceGrossAmount: invGrossAmount,//.toString(),
+                    to_SuplrInvcItemPurOrdRef: to_InvoiceItem.map(item => ({
+                        SupplierInvoice: item.supplierInvoice,
+                        FiscalYear: item.fiscalYear || fiscalYear,
+                        SupplierInvoiceItem: item.sup_InvoiceItem,
+                        PurchaseOrder: item.purchaseOrder,
+                        PurchaseOrderItem: item.purchaseOrderItem,
+                        ReferenceDocument: item.referenceDocument,
+                        ReferenceDocumentFiscalYear: item.refDocFiscalYear,
+                        ReferenceDocumentItem: item.refDocItem,
+                        TaxCode: item.taxCode,
+                        DocumentCurrency: item.documentCurrency || documentCurrency,
+                        SupplierInvoiceItemAmount: item.supInvItemAmount,//.toString(),
+                        PurchaseOrderQuantityUnit: item.poQuantityUnit,
+                        QuantityInPurchaseOrderUnit: item.quantityPOUnit,//.toString(),
+                    })),
+                };
+                // Post the payload to the destination
+                const response = await invoiceDest.post('/A_SupplierInvoice', payload);
+                req.data.newInvoice = response.SupplierInvoice;
+                return req;
+            } catch (error) {
+                console.error('Error while posting invoice:', error.message);
+                req.data.statusFlag = 'E';
+                req.data.status = error.message;
+                req.error(400, 'Failed to create the supplier invoice.');
+            }
+        }
 
 
 

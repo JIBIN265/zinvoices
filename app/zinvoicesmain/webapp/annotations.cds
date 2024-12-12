@@ -2,7 +2,8 @@ using InvCatalogService as service from '../../../srv/cat-service';
 
 annotate service.Invoice with @(
     odata.draft.enabled,
-    UI.FieldGroup #GeneratedGroup: {
+    ![@UI.Criticality]                                    : statusColor.criticality,
+    UI.FieldGroup #GeneratedGroup                         : {
         $Type: 'UI.FieldGroupType',
         Data : [
             {
@@ -42,7 +43,7 @@ annotate service.Invoice with @(
             },
         ],
     },
-    UI.Facets                    : [
+    UI.Facets                                             : [
         {
             $Type : 'UI.ReferenceFacet',
             ID    : 'GeneratedFacet1',
@@ -56,11 +57,18 @@ annotate service.Invoice with @(
             Target: 'to_InvoiceItem/@UI.LineItem#ItemDetails',
         },
     ],
-    UI.LineItem                  : [
+    UI.LineItem                                           : [
         {
             $Type: 'UI.DataField',
             Label: '{i18n>DocumentId}',
             Value: documentId,
+        },
+        {
+            $Type                    : 'UI.DataField',
+            Label                    : '{i18n>Status1}',
+            Value                    : statusColor.value,
+            Criticality              : statusColor.criticality, //Supported values 0,1,2,3,5
+            CriticalityRepresentation: #WithIcon,
         },
         {
             $Type: 'UI.DataField',
@@ -98,13 +106,13 @@ annotate service.Invoice with @(
             Label: '{i18n>GrossAmount}',
         },
         {
-            $Type : 'UI.DataField',
-            Value : supInvParty,
-            Label : '{i18n>SupplierInvoiceParty}',
+            $Type: 'UI.DataField',
+            Value: supInvParty,
+            Label: '{i18n>SupplierInvoiceParty}',
         },
         {
-            $Type : 'UI.DataField',
-            Value : createdBy,
+            $Type: 'UI.DataField',
+            Value: createdBy,
         },
         {
             $Type: 'UI.DataField',
@@ -118,28 +126,28 @@ annotate service.Invoice with @(
         },
         {
             $Type : 'UI.DataFieldForAction',
-            Action : 'InvCatalogService.copyInvoice',
+            Action: 'InvCatalogService.copyInvoice',
             Label : '{i18n>copy}',
         },
     ],
-    UI.HeaderFacets              : [{
+    UI.HeaderFacets                                       : [{
         $Type : 'UI.ReferenceFacet',
         Label : '{i18n>AdminData}',
         ID    : 'i18nAdmionData',
         Target: '@UI.FieldGroup#i18nAdmionData',
     }, ],
-    UI.FieldGroup #i18nAdmionData: {
+    UI.FieldGroup #i18nAdmionData                         : {
         $Type: 'UI.FieldGroupType',
         Data : [
             {
-                $Type : 'UI.DataField',
-                Value : companyCode,
-                Label : '{i18n>CompanyCode}',
+                $Type: 'UI.DataField',
+                Value: companyCode,
+                Label: '{i18n>CompanyCode}',
             },
             {
-                $Type : 'UI.DataField',
-                Value : fiscalYear,
-                Label : '{i18n>FiscalYear}',
+                $Type: 'UI.DataField',
+                Value: fiscalYear,
+                Label: '{i18n>FiscalYear}',
             },
             {
                 $Type: 'UI.DataField',
@@ -151,60 +159,74 @@ annotate service.Invoice with @(
                 Label: '{i18n>InvoiceNumber}',
             },
             {
-                $Type : 'UI.DataField',
-                Value : status,
-                Label : '{i18n>Status}',
+                $Type: 'UI.DataField',
+                Value: status,
+                Label: '{i18n>Status}',
             },
         ],
     },
-    UI.HeaderInfo : {
-        Title : {
-            $Type : 'UI.DataField',
-            Value : documentId,
+    UI.HeaderInfo                                         : {
+        Title         : {
+            $Type: 'UI.DataField',
+            Value: documentId,
         },
-        TypeName : '',
-        TypeNamePlural : '',
+        TypeName      : '',
+        TypeNamePlural: '',
     },
-    UI.SelectionPresentationVariant #tableView : {
+    UI.SelectionPresentationVariant #tableView            : {
+        $Type              : 'UI.SelectionPresentationVariantType',
+        PresentationVariant: {
+            $Type         : 'UI.PresentationVariantType',
+            Visualizations: ['@UI.LineItem', ],
+        },
+        SelectionVariant   : {
+            $Type        : 'UI.SelectionVariantType',
+            SelectOptions: [],
+        },
+        Text               : 'Table View',
+    },
+    Analytics.AggregatedProperty #documentId_countdistinct: {
+        $Type               : 'Analytics.AggregatedPropertyType',
+        Name                : 'documentId_countdistinct',
+        AggregatableProperty: documentId,
+        AggregationMethod   : 'countdistinct',
+        ![@Common.Label]    : '{i18n>DocumentIdCountDistinct}',
+    },
+    UI.Chart #chartView                                   : {
+        $Type          : 'UI.ChartDefinitionType',
+        ChartType      : #Column,
+        Dimensions     : [
+            supInvParty,
+            createdBy,
+        ],
+        DynamicMeasures: ['@Analytics.AggregatedProperty#documentId_countdistinct', ],
+        Title          : '{i18n>DocumentsBySupplierInvoice}',
+    },
+    UI.SelectionPresentationVariant #chartView            : {
+        $Type              : 'UI.SelectionPresentationVariantType',
+        PresentationVariant: {
+            $Type         : 'UI.PresentationVariantType',
+            Visualizations: ['@UI.Chart#chartView', ],
+        },
+        SelectionVariant   : {
+            $Type        : 'UI.SelectionVariantType',
+            SelectOptions: [],
+        },
+        Text               : 'Chart View',
+    },
+    UI.SelectionPresentationVariant #table : {
         $Type : 'UI.SelectionPresentationVariantType',
         PresentationVariant : {
             $Type : 'UI.PresentationVariantType',
             Visualizations : [
                 '@UI.LineItem',
             ],
-        },
-        SelectionVariant : {
-            $Type : 'UI.SelectionVariantType',
-            SelectOptions : [
-            ],
-        },
-        Text : 'Table View',
-    },
-    Analytics.AggregatedProperty #documentId_countdistinct : {
-        $Type : 'Analytics.AggregatedPropertyType',
-        Name : 'documentId_countdistinct',
-        AggregatableProperty : documentId,
-        AggregationMethod : 'countdistinct',
-        ![@Common.Label] : '{i18n>DocumentIdCountDistinct}',
-    },
-    UI.Chart #chartView : {
-        $Type : 'UI.ChartDefinitionType',
-        ChartType : #Column,
-        Dimensions : [
-            supInvParty,
-            createdBy,
-        ],
-        DynamicMeasures : [
-            '@Analytics.AggregatedProperty#documentId_countdistinct',
-        ],
-        Title : '{i18n>DocumentsBySupplierInvoice}',
-    },
-    UI.SelectionPresentationVariant #chartView : {
-        $Type : 'UI.SelectionPresentationVariantType',
-        PresentationVariant : {
-            $Type : 'UI.PresentationVariantType',
-            Visualizations : [
-                '@UI.Chart#chartView',
+            SortOrder : [
+                {
+                    $Type : 'Common.SortOrderType',
+                    Property : documentId,
+                    Descending : true,
+                },
             ],
         },
         SelectionVariant : {
@@ -212,7 +234,6 @@ annotate service.Invoice with @(
             SelectOptions : [
             ],
         },
-        Text : 'Chart View',
     },
 );
 
@@ -228,14 +249,14 @@ annotate service.InvoiceItem with @(UI.LineItem #ItemDetails: [
         Label: '{i18n>SupplierInvoice}',
     },
     {
-        $Type : 'UI.DataField',
-        Value : fiscalYear,
-        Label : '{i18n>FiscalYear}',
+        $Type: 'UI.DataField',
+        Value: fiscalYear,
+        Label: '{i18n>FiscalYear}',
     },
     {
-        $Type : 'UI.DataField',
-        Value : documentCurrency,
-        Label : '{i18n>DocumentCurrency}',
+        $Type: 'UI.DataField',
+        Value: documentCurrency,
+        Label: '{i18n>DocumentCurrency}',
     },
     {
         $Type: 'UI.DataField',
@@ -307,7 +328,7 @@ annotate service.Invoice with @Aggregation.ApplySupported: {
     ],
     AggregatableProperties: [{Property: documentId, }],
 };
-annotate service.Invoice with {
-    supInvParty @Common.Label : '{i18n>SupplierInvoiceParty}'
-};
 
+annotate service.Invoice with {
+    supInvParty @Common.Label: '{i18n>SupplierInvoiceParty}'
+};
