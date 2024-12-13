@@ -24,7 +24,7 @@ extend sap.common.Currencies with {
 type sap.common.Region        : Association to one sap.common.Regions;
 
 entity sap.common.Regions : CodeList {
-  key code    : String(10) @title: '{i18n>region}' @Common.Text : name @Common.TextArrangement : #TextFirst;
+  key code    : String(10)  @title: '{i18n>region}'  @Common.Text: name  @Common.TextArrangement: #TextFirst;
   key country : Country; //@UI.Hidden;
 }
 

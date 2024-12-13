@@ -1,5 +1,5 @@
 code,value,criticality,deletePossible,insertPossible,updatePossible
-N,In Progress,5,true,true,true
+N,In Progress,4,true,true,true
 S,Success,3,true,true,true
 X,Expired,0,false,false,false
 W,Warning,2,true,true,true

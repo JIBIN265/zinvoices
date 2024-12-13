@@ -1,4 +1,4 @@
-up__ID;ID;createdAt;createdBy;modifiedAt;modifiedBy;supplierInvoice;fiscalYear;sup_InvoiceItem;purchaseOrder;purchaseOrderItem;referenceDocument;refDocFiscalYear;refDocItem;taxCode;documentCurrency;supInvItemAmount;poQuantityUnit;quantityPOUnit
+up__ID;ID;createdAt;createdBy;modifiedAt;modifiedBy;supplierInvoice;fiscalYear;sup_InvoiceItem;purchaseOrder;purchaseOrderItem;referenceDocument;refDocFiscalYear;refDocItem;taxCode;documentCurrency_code;supInvItemAmount;poQuantityUnit;quantityPOUnit
 0891c370-62dc-4cf0-a220-1d88686baa94;843d2167-8f8b-46fc-a687-1da187429f16;2020-10-04T08:31:07.795Z;November Bravo Alfa;2020-03-02T06:22:23.357Z;Victor;5105600117;2024;10;4500000001;10;5000000010;2022;10;PO;CAD;220;PC;220
 c1b0ca2e-4999-4a97-9d32-e81800b95451;52b9ac06-a1c4-4dfa-b1cc-c90f3fac64ee;2022-03-28T00:15:12.291Z;Victor Oscar Tango;2018-01-31T03:45:06.242Z;Bravo Whiskey;5105600117;2024;10;4500000001;10;5000000010;2022;10;PO;CAD;220;PC;220
 731c1e63-7a0d-48b1-8572-729c3fb88e71;52885eaf-5c1e-4b39-9b5a-aee392268a38;2020-06-04T20:58:17.809Z;Kilo Romeo;2019-07-11T12:23:13.954Z;Victor;5105600117;2024;10;4500000001;;5000000010;2022;10;PO;CAD;220;PC;220

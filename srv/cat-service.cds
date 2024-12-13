@@ -1,4 +1,5 @@
 using zsupplier as persistence from '../db/schema';
+using {sap.common as common} from '../db/common';
 using {CE_PURCHASEORDER_0001 as po} from './external/CE_PURCHASEORDER_0001';
 using {API_MATERIAL_DOCUMENT_SRV as gr} from './external/API_MATERIAL_DOCUMENT_SRV';
 
@@ -23,7 +24,7 @@ service InvCatalogService @(requires: 'authenticated-user') {
                 cds.odata.bindingparameter.name: '_it',
                 Common.SideEffects             : {TargetProperties: ['_it/status']}
             )
-            action threewaymatch() returns {
+            action threewaymatch()         returns {
                 FiscalYear : String(4);
                 CompanyCode : String(4);
                 DocumentDate : Date;
@@ -60,6 +61,9 @@ service InvCatalogService @(requires: 'authenticated-user') {
         projection on gr.A_MaterialDocumentHeader {
             *
         };
+
+    @readonly
+    entity Currencies               as projection on common.Currencies;
 
     @readonly
     entity StatusValues             as projection on persistence.StatusValues;

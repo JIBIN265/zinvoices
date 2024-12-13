@@ -34,7 +34,7 @@ annotate service.Invoice with @(
             {
                 $Type: 'UI.DataField',
                 Label: '{i18n>Currency}',
-                Value: documentCurrency,
+                Value: documentCurrency_code,
             },
             {
                 $Type: 'UI.DataField',
@@ -59,9 +59,10 @@ annotate service.Invoice with @(
     ],
     UI.LineItem                                           : [
         {
-            $Type: 'UI.DataField',
-            Label: '{i18n>DocumentId}',
-            Value: documentId,
+            $Type                : 'UI.DataField',
+            Label                : '{i18n>DocumentId1}',
+            Value                : documentId,
+            ![@HTML5.CssDefaults]: {width: '7%', },
         },
         {
             $Type                    : 'UI.DataField',
@@ -97,7 +98,7 @@ annotate service.Invoice with @(
         },
         {
             $Type: 'UI.DataField',
-            Value: documentCurrency,
+            Value: documentCurrency_code,
             Label: '{i18n>Currency}',
         },
         {
@@ -214,27 +215,28 @@ annotate service.Invoice with @(
         },
         Text               : 'Chart View',
     },
-    UI.SelectionPresentationVariant #table : {
-        $Type : 'UI.SelectionPresentationVariantType',
-        PresentationVariant : {
-            $Type : 'UI.PresentationVariantType',
-            Visualizations : [
-                '@UI.LineItem',
-            ],
-            SortOrder : [
-                {
-                    $Type : 'Common.SortOrderType',
-                    Property : documentId,
-                    Descending : true,
-                },
-            ],
+    UI.SelectionPresentationVariant #table                : {
+        $Type              : 'UI.SelectionPresentationVariantType',
+        PresentationVariant: {
+            $Type         : 'UI.PresentationVariantType',
+            Visualizations: ['@UI.LineItem', ],
+            SortOrder     : [{
+                $Type     : 'Common.SortOrderType',
+                Property  : documentId,
+                Descending: true,
+            }, ],
         },
-        SelectionVariant : {
-            $Type : 'UI.SelectionVariantType',
-            SelectOptions : [
-            ],
+        SelectionVariant   : {
+            $Type        : 'UI.SelectionVariantType',
+            SelectOptions: [],
         },
     },
+    UI.SelectionFields                                    : [
+        documentId,
+        newInvoice,
+        companyCode,
+        fiscalYear,
+    ],
 );
 
 annotate service.InvoiceItem with @(UI.LineItem #ItemDetails: [
@@ -255,7 +257,7 @@ annotate service.InvoiceItem with @(UI.LineItem #ItemDetails: [
     },
     {
         $Type: 'UI.DataField',
-        Value: documentCurrency,
+        Value: documentCurrency_code,
         Label: '{i18n>DocumentCurrency}',
     },
     {
@@ -330,5 +332,46 @@ annotate service.Invoice with @Aggregation.ApplySupported: {
 };
 
 annotate service.Invoice with {
-    supInvParty @Common.Label: '{i18n>SupplierInvoiceParty}'
+    supInvParty       @validation.message : 'Supplier Invoice Party is Mandatory'  @(
+        Common.Label       : '{i18n>SupplierInvoiceParty}',
+        Common.FieldControl: #Mandatory
+    );
+    documentId        @Common.Label       : '{i18n>DocumentId1}';
+    newInvoice        @Common.Label       : '{i18n>InvoiceNumber}';
+    companyCode       @validation.message : 'Company Code is Mandatory'            @(
+        Common.Label       : '{i18n>CompanyCode}',
+        Common.FieldControl: #Mandatory
+
+    );
+    fiscalYear        @validation.message : 'Fiscal Year is Mandatory'             @(
+        Common.Label       : '{i18n>FiscalYear}',
+        Common.FieldControl: #Mandatory
+
+    );
+    documentDate      @Common.FieldControl: #Mandatory                             @validation.message: 'Document Date is Mandatory';
+    postingDate       @Common.FieldControl: #Mandatory                             @validation.message: 'Posting Date is Mandatory';
+    documentCurrency  @Common.FieldControl: #Mandatory                             @(
+        validation.message: 'Document Currency is Mandatory',
+        Common.ValueListWithFixedValues : false,
+        Common.ValueList : {
+            $Type : 'Common.ValueListType',
+            CollectionPath : 'Currencies',
+            Parameters : [
+                {
+                    $Type : 'Common.ValueListParameterInOut',
+                    LocalDataProperty : documentCurrency_code,
+                    ValueListProperty : 'code',
+                },
+            ],
+            Label : '{i18n>Currency}',
+        },
+    );
+    invGrossAmount    @Common.FieldControl: #Mandatory                             @validation.message: 'Invoice Gross Amount is Mandatory';
 };
+annotate service.Currencies with {
+    code @Common.Text : {
+        $value : descr,
+        ![@UI.TextArrangement] : #TextFirst,
+    }
+};
+

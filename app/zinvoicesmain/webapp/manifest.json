@@ -144,7 +144,10 @@
               "controlConfiguration": {
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "tableSettings": {
-                    "type": "ResponsiveTable"
+                    "type": "ResponsiveTable",
+                    "condensedTableLayout": true,
+                    "enableExport": true,
+                    "widthIncludingColumnHeader": true
                   },
                   "actions": {
                     "DataFieldForAction::InvCatalogService.copyInvoice": {
