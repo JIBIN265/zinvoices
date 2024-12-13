@@ -154,6 +154,34 @@
                       "enableOnSelect": "single"
                     }
                   }
+                },
+                "@com.sap.vocabularies.UI.v1.LineItem#tableView": {
+                  "tableSettings": {
+                    "condensedTableLayout": true,
+                    "enableExport": true,
+                    "widthIncludingColumnHeader": true
+                  }
+                },
+                "@com.sap.vocabularies.UI.v1.LineItem#tableView2": {
+                  "tableSettings": {
+                    "condensedTableLayout": true,
+                    "enableExport": true,
+                    "widthIncludingColumnHeader": true
+                  }
+                },
+                "@com.sap.vocabularies.UI.v1.LineItem#tableView3": {
+                  "tableSettings": {
+                    "condensedTableLayout": true,
+                    "enableExport": true,
+                    "widthIncludingColumnHeader": true
+                  }
+                },
+                "@com.sap.vocabularies.UI.v1.LineItem#tableView4": {
+                  "tableSettings": {
+                    "condensedTableLayout": true,
+                    "enableExport": true,
+                    "widthIncludingColumnHeader": true
+                  }
                 }
               },
               "content": {
@@ -169,7 +197,34 @@
                 }
               },
               "initialLoad": "Enabled",
-              "defaultTemplateAnnotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#table"
+              "views": {
+                "paths": [
+                  {
+                    "key": "table",
+                    "annotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#table"
+                  },
+                  {
+                    "key": "tableView1",
+                    "annotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#tableView1"
+                  },
+                  {
+                    "key": "tableView2",
+                    "annotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#tableView2"
+                  },
+                  {
+                    "key": "tableView3",
+                    "annotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#tableView3"
+                  },
+                  {
+                    "key": "tableView4",
+                    "annotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#tableView4"
+                  },
+                  {
+                    "key": "chartView",
+                    "annotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#chartView"
+                  }
+                ]
+              }
             }
           },
           "controlAggregation": "beginColumnPages",

@@ -122,11 +122,6 @@ annotate service.Invoice with @(
         },
         {
             $Type : 'UI.DataFieldForAction',
-            Action: 'InvCatalogService.threewaymatch',
-            Label : '{i18n>threeWayMatch}',
-        },
-        {
-            $Type : 'UI.DataFieldForAction',
             Action: 'InvCatalogService.copyInvoice',
             Label : '{i18n>copy}',
         },
@@ -230,6 +225,7 @@ annotate service.Invoice with @(
             $Type        : 'UI.SelectionVariantType',
             SelectOptions: [],
         },
+        Text               : '{i18n>AllInvoices}',
     },
     UI.SelectionFields                                    : [
         documentId,
@@ -237,6 +233,363 @@ annotate service.Invoice with @(
         companyCode,
         fiscalYear,
     ],
+    UI.LineItem #tableView                                : [
+        {
+            $Type                : 'UI.DataField',
+            Value                : documentId,
+            ![@HTML5.CssDefaults]: {width: '7%', },
+        },
+        {
+            $Type                    : 'UI.DataField',
+            Value                    : statusColor.criticality,
+            Label                    : '{i18n>Status1}',
+            Criticality              : statusColor.criticality,
+            CriticalityRepresentation: #WithIcon,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: newInvoice,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: fiscalYear,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: companyCode,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: documentDate,
+            Label: '{i18n>DocumentDate}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: postingDate,
+            Label: '{i18n>PostingDate}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: documentCurrency_code,
+            Label: '{i18n>Currency}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: invGrossAmount,
+            Label: '{i18n>GrossAmount}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: supInvParty,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: createdBy,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: status,
+            Label: '{i18n>Status}',
+        },
+        {
+            $Type : 'UI.DataFieldForAction',
+            Action: 'InvCatalogService.copyInvoice',
+            Label : '{i18n>copy}',
+        },
+    ],
+    UI.SelectionPresentationVariant #tableView1           : {
+        $Type              : 'UI.SelectionPresentationVariantType',
+        PresentationVariant: {
+            $Type         : 'UI.PresentationVariantType',
+            Visualizations: ['@UI.LineItem#tableView', ],
+            SortOrder     : [{
+                $Type     : 'Common.SortOrderType',
+                Property  : documentId,
+                Descending: true,
+            }, ],
+        },
+        SelectionVariant   : {
+            $Type        : 'UI.SelectionVariantType',
+            SelectOptions: [{
+                $Type       : 'UI.SelectOptionType',
+                PropertyName: mode,
+                Ranges      : [{
+                    Sign  : #I,
+                    Option: #EQ,
+                    Low   : 'pdf',
+                }, ],
+            }, ],
+        },
+        Text               : '{i18n>PdfExtracted}',
+    },
+    UI.LineItem #tableView1                               : [],
+    UI.LineItem #tableView2                               : [
+        {
+            $Type                : 'UI.DataField',
+            Value                : documentId,
+            ![@HTML5.CssDefaults]: {width: '7%', },
+        },
+        {
+            $Type                    : 'UI.DataField',
+            Value                    : statusColor.criticality,
+            Label                    : '{i18n>Status1}',
+            Criticality              : statusColor.criticality,
+            CriticalityRepresentation: #WithIcon,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: newInvoice,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: fiscalYear,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: companyCode,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: documentDate,
+            Label: '{i18n>DocumentDate}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: postingDate,
+            Label: '{i18n>PostingDate}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: documentCurrency_code,
+            Label: '{i18n>Currency}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: invGrossAmount,
+            Label: '{i18n>GrossAmount}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: supInvParty,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: createdBy,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: status,
+            Label: '{i18n>Status}',
+        },
+        {
+            $Type : 'UI.DataFieldForAction',
+            Action: 'InvCatalogService.copyInvoice',
+            Label : '{i18n>copy}',
+        },
+    ],
+    UI.SelectionPresentationVariant #tableView2           : {
+        $Type              : 'UI.SelectionPresentationVariantType',
+        PresentationVariant: {
+            $Type         : 'UI.PresentationVariantType',
+            Visualizations: ['@UI.LineItem#tableView2', ],
+            SortOrder     : [{
+                $Type     : 'Common.SortOrderType',
+                Property  : documentId,
+                Descending: true,
+            }, ],
+        },
+        SelectionVariant   : {
+            $Type        : 'UI.SelectionVariantType',
+            SelectOptions: [{
+                $Type       : 'UI.SelectOptionType',
+                PropertyName: mode,
+                Ranges      : [{
+                    Sign  : #I,
+                    Option: #EQ,
+                    Low   : 'email',
+                }, ],
+            }, ],
+        },
+        Text               : '{i18n>EmailAutomated}',
+    },
+    UI.LineItem #tableView3                               : [
+        {
+            $Type                : 'UI.DataField',
+            Value                : documentId,
+            ![@HTML5.CssDefaults]: {width: '7%', },
+        },
+        {
+            $Type                    : 'UI.DataField',
+            Value                    : statusColor.criticality,
+            Label                    : '{i18n>Status1}',
+            Criticality              : statusColor.criticality,
+            CriticalityRepresentation: #WithIcon,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: newInvoice,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: fiscalYear,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: companyCode,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: documentDate,
+            Label: '{i18n>DocumentDate}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: postingDate,
+            Label: '{i18n>PostingDate}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: documentCurrency_code,
+            Label: '{i18n>Currency}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: invGrossAmount,
+            Label: '{i18n>GrossAmount}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: supInvParty,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: createdBy,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: status,
+            Label: '{i18n>Status}',
+        },
+        {
+            $Type : 'UI.DataFieldForAction',
+            Action: 'InvCatalogService.copyInvoice',
+            Label : '{i18n>copy}',
+        },
+    ],
+    UI.SelectionPresentationVariant #tableView3           : {
+        $Type              : 'UI.SelectionPresentationVariantType',
+        PresentationVariant: {
+            $Type         : 'UI.PresentationVariantType',
+            Visualizations: ['@UI.LineItem#tableView3', ],
+            SortOrder     : [{
+                $Type     : 'Common.SortOrderType',
+                Property  : documentId,
+                Descending: true,
+            }, ],
+        },
+        SelectionVariant   : {
+            $Type        : 'UI.SelectionVariantType',
+            SelectOptions: [{
+                $Type       : 'UI.SelectOptionType',
+                PropertyName: statusFlag,
+                Ranges      : [{
+                    Sign  : #I,
+                    Option: #EQ,
+                    Low   : 'S',
+                }, ],
+            }, ],
+        },
+        Text               : '{i18n>PostedInvoices}',
+    },
+    UI.LineItem #tableView4                               : [
+        {
+            $Type                : 'UI.DataField',
+            Value                : documentId,
+            ![@HTML5.CssDefaults]: {width: '7%', },
+        },
+        {
+            $Type                    : 'UI.DataField',
+            Value                    : statusColor.criticality,
+            Label                    : '{i18n>Status1}',
+            Criticality              : statusColor.criticality,
+            CriticalityRepresentation: #WithIcon,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: newInvoice,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: fiscalYear,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: companyCode,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: documentDate,
+            Label: '{i18n>DocumentDate}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: postingDate,
+            Label: '{i18n>PostingDate}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: documentCurrency_code,
+            Label: '{i18n>Currency}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: invGrossAmount,
+            Label: '{i18n>GrossAmount}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: supInvParty,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: createdBy,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: status,
+            Label: '{i18n>Status}',
+        },
+        {
+            $Type : 'UI.DataFieldForAction',
+            Action: 'InvCatalogService.copyInvoice',
+            Label : '{i18n>copy}',
+        },
+    ],
+    UI.SelectionPresentationVariant #tableView4           : {
+        $Type              : 'UI.SelectionPresentationVariantType',
+        PresentationVariant: {
+            $Type         : 'UI.PresentationVariantType',
+            Visualizations: ['@UI.LineItem#tableView4', ],
+            SortOrder     : [{
+                $Type     : 'Common.SortOrderType',
+                Property  : documentId,
+                Descending: true,
+            }, ],
+        },
+        SelectionVariant   : {
+            $Type        : 'UI.SelectionVariantType',
+            SelectOptions: [{
+                $Type       : 'UI.SelectOptionType',
+                PropertyName: statusFlag,
+                Ranges      : [{
+                    Sign  : #I,
+                    Option: #EQ,
+                    Low   : 'E',
+                }, ],
+            }, ],
+        },
+        Text               : '{i18n>ErroneousInvoices}',
+    },
 );
 
 annotate service.InvoiceItem with @(UI.LineItem #ItemDetails: [
@@ -351,8 +704,32 @@ annotate service.Invoice with {
     documentDate      @Common.FieldControl: #Mandatory                             @validation.message: 'Document Date is Mandatory';
     postingDate       @Common.FieldControl: #Mandatory                             @validation.message: 'Posting Date is Mandatory';
     documentCurrency  @Common.FieldControl: #Mandatory                             @(
-        validation.message: 'Document Currency is Mandatory',
-        Label             : '{i18n>Currency}'
+        validation.message             : 'Document Currency is Mandatory',
+        Label                          : '{i18n>Currency}',
+        Common.ValueListWithFixedValues: false,
+        Common.ValueList               : {
+            $Type         : 'Common.ValueListType',
+            CollectionPath: 'Currencies',
+            Parameters    : [
+                {
+                    $Type            : 'Common.ValueListParameterInOut',
+                    LocalDataProperty: documentCurrency_code,
+                    ValueListProperty: 'code',
+                },
+                {
+                    $Type            : 'Common.ValueListParameterOut',
+                    ValueListProperty: 'descr',
+                    LocalDataProperty: documentCurrency.descr,
+                },
+            ],
+        },
     );
     invGrossAmount    @Common.FieldControl: #Mandatory                             @validation.message: 'Invoice Gross Amount is Mandatory';
+};
+
+annotate service.Currencies with {
+    code @Common.Text: {
+        $value                : name,
+        ![@UI.TextArrangement]: #TextFirst,
+    }
 };
