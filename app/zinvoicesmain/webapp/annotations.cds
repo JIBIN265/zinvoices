@@ -352,26 +352,7 @@ annotate service.Invoice with {
     postingDate       @Common.FieldControl: #Mandatory                             @validation.message: 'Posting Date is Mandatory';
     documentCurrency  @Common.FieldControl: #Mandatory                             @(
         validation.message: 'Document Currency is Mandatory',
-        Common.ValueListWithFixedValues : false,
-        Common.ValueList : {
-            $Type : 'Common.ValueListType',
-            CollectionPath : 'Currencies',
-            Parameters : [
-                {
-                    $Type : 'Common.ValueListParameterInOut',
-                    LocalDataProperty : documentCurrency_code,
-                    ValueListProperty : 'code',
-                },
-            ],
-            Label : '{i18n>Currency}',
-        },
+        Label             : '{i18n>Currency}'
     );
     invGrossAmount    @Common.FieldControl: #Mandatory                             @validation.message: 'Invoice Gross Amount is Mandatory';
 };
-annotate service.Currencies with {
-    code @Common.Text : {
-        $value : descr,
-        ![@UI.TextArrangement] : #TextFirst,
-    }
-};
-

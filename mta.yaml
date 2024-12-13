@@ -13,7 +13,6 @@ modules:
       - name: zinvoices-connectivity
       - name: zinvoices-destination-service
       - name: sbpa_dms_repo
-      - name: zinvoices-attachments
     provides:
       - name: srv-api
         properties:
@@ -119,22 +118,6 @@ modules:
         - npm run build
       supported-platforms:
         []
-
-  - name: zinvoices-app-deployer
-    type: com.sap.application.content
-    path: gen
-    requires:
-      - name: zinvoices-html5-repo-host
-        parameters:
-          content-target: true
-      - name: zinvoices-repo-host
-    build-parameters:
-      build-result: app/
-      requires:
-        - name: zinvoiceszinvoicesmain
-          artifacts:
-            - zinvoicesmain.zip
-          target-path: app/
 resources:
   - name: sbpa_dms_repo
     type: org.cloudfoundry.existing-service
@@ -201,11 +184,6 @@ resources:
     parameters:
       service: html5-apps-repo
       service-plan: app-runtime
-  - name: zinvoices-attachments
-    type: org.cloudfoundry.managed-service
-    parameters:
-      service: objectstore
-      service-plan: standard
 parameters:
   deploy_mode: html5-repo
   enable-parallel-deployments: true
