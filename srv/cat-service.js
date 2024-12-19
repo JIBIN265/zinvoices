@@ -167,13 +167,19 @@ class InvCatalogService extends cds.ApplicationService {
                         poQuantityUnit: lineItem.unitOfMeasure,
                         quantityPOUnit: parseFloat(lineItem.quantity)
                     }));
-
+                    req.data.mode = 'pdf';
                     await threeWayMatch(req);
-                    await postInvoice(req);
+                    if (req.data.statusFlag === 'S') {
+                        await postInvoice(req);
+                    }
+
                 }
             } else {
+                req.data.mode = 'manual'
                 await threeWayMatch(req);
-                await postInvoice(req);
+                if (req.data.statusFlag === 'S') {
+                    await postInvoice(req);
+                }
             }
         });
 
