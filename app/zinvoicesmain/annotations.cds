@@ -1,4 +1,4 @@
-using InvCatalogService as service from '../../../srv/cat-service';
+using InvCatalogService as service from '../../srv/cat-service';
 
 annotate service.Invoice with @(
     odata.draft.enabled,
@@ -60,16 +60,21 @@ annotate service.Invoice with @(
     UI.LineItem                                           : [
         {
             $Type                : 'UI.DataField',
-            Label                : '{i18n>DocumentId1}',
+            Label                : '{i18n>DocumentId}',
             Value                : documentId,
             ![@HTML5.CssDefaults]: {width: '7%', },
         },
         {
             $Type                    : 'UI.DataField',
-            Label                    : '{i18n>Status1}',
+            Label                    : '{i18n>Status}',
             Value                    : statusColor.value,
             Criticality              : statusColor.criticality, //Supported values 0,1,2,3,5
             CriticalityRepresentation: #WithIcon,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: status,
+            Label: '{i18n>DetailedStatus}',
         },
         {
             $Type: 'UI.DataField',
@@ -114,11 +119,6 @@ annotate service.Invoice with @(
         {
             $Type: 'UI.DataField',
             Value: createdBy,
-        },
-        {
-            $Type: 'UI.DataField',
-            Value: status,
-            Label: '{i18n>Status}',
         },
         {
             $Type : 'UI.DataFieldForAction',
@@ -208,7 +208,7 @@ annotate service.Invoice with @(
             $Type        : 'UI.SelectionVariantType',
             SelectOptions: [],
         },
-        Text               : 'Chart View',
+        Text               : '{i18n>ChartView}',
     },
     UI.SelectionPresentationVariant #table                : {
         $Type              : 'UI.SelectionPresentationVariantType',
@@ -225,7 +225,7 @@ annotate service.Invoice with @(
             $Type        : 'UI.SelectionVariantType',
             SelectOptions: [],
         },
-        Text               : '{i18n>AllInvoices}',
+        Text               : '{i18n>AllInvoices1}',
     },
     UI.SelectionFields                                    : [
         documentId,
@@ -237,14 +237,20 @@ annotate service.Invoice with @(
         {
             $Type                : 'UI.DataField',
             Value                : documentId,
+            Label : '{i18n>DocumentId}',
             ![@HTML5.CssDefaults]: {width: '7%', },
         },
         {
             $Type                    : 'UI.DataField',
             Value                    : statusColor.criticality,
-            Label                    : '{i18n>Status1}',
+            Label                    : '{i18n>Status}',
             Criticality              : statusColor.criticality,
             CriticalityRepresentation: #WithIcon,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: status,
+            Label: '{i18n>DetailedStatus}',
         },
         {
             $Type: 'UI.DataField',
@@ -285,11 +291,6 @@ annotate service.Invoice with @(
         {
             $Type: 'UI.DataField',
             Value: createdBy,
-        },
-        {
-            $Type: 'UI.DataField',
-            Value: status,
-            Label: '{i18n>Status}',
         },
         {
             $Type : 'UI.DataFieldForAction',
@@ -327,14 +328,20 @@ annotate service.Invoice with @(
         {
             $Type                : 'UI.DataField',
             Value                : documentId,
+            Label : '{i18n>DocumentId}',
             ![@HTML5.CssDefaults]: {width: '7%', },
         },
         {
             $Type                    : 'UI.DataField',
             Value                    : statusColor.criticality,
-            Label                    : '{i18n>Status1}',
+            Label                    : '{i18n>Status}',
             Criticality              : statusColor.criticality,
             CriticalityRepresentation: #WithIcon,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: status,
+            Label: '{i18n>DetailedStatus}',
         },
         {
             $Type: 'UI.DataField',
@@ -375,11 +382,6 @@ annotate service.Invoice with @(
         {
             $Type: 'UI.DataField',
             Value: createdBy,
-        },
-        {
-            $Type: 'UI.DataField',
-            Value: status,
-            Label: '{i18n>Status}',
         },
         {
             $Type : 'UI.DataFieldForAction',
@@ -416,14 +418,20 @@ annotate service.Invoice with @(
         {
             $Type                : 'UI.DataField',
             Value                : documentId,
+            Label : '{i18n>DocumentId}',
             ![@HTML5.CssDefaults]: {width: '7%', },
         },
         {
             $Type                    : 'UI.DataField',
             Value                    : statusColor.criticality,
-            Label                    : '{i18n>Status1}',
+            Label                    : '{i18n>Status}',
             Criticality              : statusColor.criticality,
             CriticalityRepresentation: #WithIcon,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: status,
+            Label: '{i18n>DetailedStatus}',
         },
         {
             $Type: 'UI.DataField',
@@ -464,11 +472,6 @@ annotate service.Invoice with @(
         {
             $Type: 'UI.DataField',
             Value: createdBy,
-        },
-        {
-            $Type: 'UI.DataField',
-            Value: status,
-            Label: '{i18n>Status}',
         },
         {
             $Type : 'UI.DataFieldForAction',
@@ -505,14 +508,20 @@ annotate service.Invoice with @(
         {
             $Type                : 'UI.DataField',
             Value                : documentId,
+            Label : '{i18n>DocumentId}',
             ![@HTML5.CssDefaults]: {width: '7%', },
         },
         {
             $Type                    : 'UI.DataField',
             Value                    : statusColor.criticality,
-            Label                    : '{i18n>Status1}',
+            Label                    : '{i18n>Status}',
             Criticality              : statusColor.criticality,
             CriticalityRepresentation: #WithIcon,
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: status,
+            Label: '{i18n>DetailedStatus}',
         },
         {
             $Type: 'UI.DataField',
@@ -553,11 +562,6 @@ annotate service.Invoice with @(
         {
             $Type: 'UI.DataField',
             Value: createdBy,
-        },
-        {
-            $Type: 'UI.DataField',
-            Value: status,
-            Label: '{i18n>Status}',
         },
         {
             $Type : 'UI.DataFieldForAction',
@@ -687,23 +691,22 @@ annotate service.Invoice with @Aggregation.ApplySupported: {
 annotate service.Invoice with {
     supInvParty       @validation.message : 'Supplier Invoice Party is Mandatory'  @(
         Common.Label       : '{i18n>SupplierInvoiceParty}',
-        Common.FieldControl: #Mandatory
+        // Common.FieldControl: #Mandatory
     );
     documentId        @Common.Label       : '{i18n>DocumentId1}';
     newInvoice        @Common.Label       : '{i18n>InvoiceNumber}';
     companyCode       @validation.message : 'Company Code is Mandatory'            @(
         Common.Label       : '{i18n>CompanyCode}',
-        Common.FieldControl: #Mandatory
-
+        // Common.FieldControl: #Mandatory
     );
     fiscalYear        @validation.message : 'Fiscal Year is Mandatory'             @(
         Common.Label       : '{i18n>FiscalYear}',
-        Common.FieldControl: #Mandatory
+        // Common.FieldControl: #Mandatory
 
     );
-    documentDate      @Common.FieldControl: #Mandatory                             @validation.message: 'Document Date is Mandatory';
-    postingDate       @Common.FieldControl: #Mandatory                             @validation.message: 'Posting Date is Mandatory';
-    documentCurrency  @Common.FieldControl: #Mandatory                             @(
+    // documentDate      @Common.FieldControl: #Mandatory                             @validation.message: 'Document Date is Mandatory';
+    // postingDate       @Common.FieldControl: #Mandatory                             @validation.message: 'Posting Date is Mandatory';
+    documentCurrency @(// @Common.FieldControl: #Mandatory                             @(
         validation.message             : 'Document Currency is Mandatory',
         Label                          : '{i18n>Currency}',
         Common.ValueListWithFixedValues: false,
@@ -724,7 +727,7 @@ annotate service.Invoice with {
             ],
         },
     );
-    invGrossAmount    @Common.FieldControl: #Mandatory                             @validation.message: 'Invoice Gross Amount is Mandatory';
+    // invGrossAmount    @Common.FieldControl: #Mandatory                             @validation.message: 'Invoice Gross Amount is Mandatory';
 };
 
 annotate service.Currencies with {

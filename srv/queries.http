@@ -1,0 +1,32 @@
+POST http://localhost:4004/odata/v4/inv-catalog/InvCatalogService.postInvoice
+Content-Type: application/json
+
+{
+    "documentNumber": "5000000010",
+    "netAmount": "150.00",
+    "taxId": "12-5846832",
+    "taxName": "Sales Tax:",
+    "purchaseOrderNumber": "4500000001",
+    "grossAmount": "150.00",
+    "currencyCode": "USD",
+    "receiverContact": "Curtis V. Brown",
+    "documentDate": "2022-10-10",
+    "taxAmount": "0.00",
+    "taxRate": "0.0",
+    "receiverName": "Standard Products",
+    "receiverAddress": "3150 SW 9th Street Miami, FL 3218 U.S.A.",
+    "paymentTerms": "Due upon receipt",
+    "senderAddress": "3451 NE Willoughby Blvd. Sturt, FL 5494 U.S.A.",
+    "senderName": "Alfreds Futterkiste",
+    "dmsFolder": "spa-res:cmis:folderid:4KeZ2vcVDiC-MklCMi0QI05RfnzdfJ91hOHL2YIsz_Y",
+    "to_Item": [
+        {
+            "description": "Professional Service",
+            "netAmount": "150.00",
+            "quantity": "100.00",
+            "unitPrice": "15.00",
+            "materialNumber": "2001",
+            "unitOfMeasure": "PC"
+        }
+    ]
+}

@@ -3,6 +3,7 @@ const SequenceHelper = require("./lib/SequenceHelper");
 const FormData = require('form-data');
 const { SELECT } = require('@sap/cds/lib/ql/cds-ql');
 const LOG = cds.log('cat-service.js')
+const axios = require('axios');
 const { S3Client, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const MAX_RETRIES = 30;
 const RETRY_DELAY_MS = 3000;
@@ -49,7 +50,23 @@ class InvCatalogService extends cds.ApplicationService {
         });
 
         this.before("SAVE", Invoice, async (req) => {
-            if (!req.data.fiscalYear) {
+            if (req.data.mode === 'email') {
+                const documentId = new SequenceHelper({
+                    db: db,
+                    sequence: "ZSUPPLIER_DOCUMENT_ID",
+                    table: "zsupplier_InvoiceEntity",
+                    field: "documentId",
+                });
+
+                let number = await documentId.getNextNumber();
+                req.data.documentId = number.toString();
+                await threeWayMatch(req);
+                if (req.data.statusFlag === 'S') {
+                    await postInvoice(req);
+                }
+            }
+            else if (!req.data.fiscalYear) {
+
                 const allRecords = await this.run(
                     SELECT.from(Invoice.drafts)
                         .columns(cpx => {
@@ -150,19 +167,19 @@ class InvCatalogService extends cds.ApplicationService {
 
                     // Populate req.data.Invoice with mapped values
                     req.data.fiscalYear = new Date(headerFields.documentDate).getFullYear().toString();
-                    req.data.documentCurrency = headerFields.currencyCode;
+                    req.data.documentCurrency_code = headerFields.currencyCode;
                     req.data.documentDate = new Date(headerFields.documentDate);
                     req.data.postingDate = new Date(headerFields.documentDate);
                     req.data.supInvParty = headerFields.senderName.substring(0, 10); // Truncate if necessary
                     req.data.invGrossAmount = parseFloat(headerFields.grossAmount);
-                    req.data.comments = "Extracted from document";
+                    // req.data.comments = "Extracted from document";
                     req.data.to_InvoiceItem = lineItems.map((lineItem, index) => ({
                         supplierInvoice: headerFields.documentNumber,
-                        fiscalYear: req.data.fiscalYear,
+                        fiscalYear: new Date(headerFields.documentDate).getFullYear().toString(),
                         sup_InvoiceItem: (index + 1).toString().padStart(5, "0"),
                         purchaseOrder: headerFields.purchaseOrderNumber,
                         purchaseOrderItem: (index + 1).toString().padStart(5, "0"),
-                        documentCurrency: headerFields.currencyCode,
+                        documentCurrency_code: headerFields.currencyCode,
                         supInvItemAmount: parseFloat(lineItem.netAmount),
                         poQuantityUnit: lineItem.unitOfMeasure,
                         quantityPOUnit: parseFloat(lineItem.quantity)
@@ -401,7 +418,7 @@ class InvCatalogService extends cds.ApplicationService {
                     documentDate,
                     postingDate,
                     supInvParty,
-                    documentCurrency,
+                    documentCurrency_code,
                     invGrossAmount,
                     to_InvoiceItem,
                 } = req.data;
@@ -414,7 +431,7 @@ class InvCatalogService extends cds.ApplicationService {
                     PostingDate: `/Date(${new Date(postingDate).getTime()})/`,
                     CreationDate: `/Date(${Date.now()})/`, // Current timestamp
                     SupplierInvoiceIDByInvcgParty: supInvParty,
-                    DocumentCurrency: documentCurrency,
+                    DocumentCurrency: documentCurrency_code,
                     InvoiceGrossAmount: invGrossAmount,//.toString(),
                     to_SuplrInvcItemPurOrdRef: to_InvoiceItem.map(item => ({
                         SupplierInvoice: item.supplierInvoice,
@@ -426,7 +443,7 @@ class InvCatalogService extends cds.ApplicationService {
                         ReferenceDocumentFiscalYear: item.refDocFiscalYear,
                         ReferenceDocumentItem: item.refDocItem,
                         TaxCode: item.taxCode,
-                        DocumentCurrency: item.documentCurrency || documentCurrency,
+                        DocumentCurrency: item.documentCurrency_code || documentCurrency_code,
                         SupplierInvoiceItemAmount: item.supInvItemAmount,//.toString(),
                         PurchaseOrderQuantityUnit: item.poQuantityUnit,
                         QuantityInPurchaseOrderUnit: item.quantityPOUnit,//.toString(),
@@ -440,11 +457,116 @@ class InvCatalogService extends cds.ApplicationService {
                 console.error('Error while posting invoice:', error.message);
                 req.data.statusFlag = 'E';
                 req.data.status = error.message;
-                req.error(400, 'Failed to create the supplier invoice.');
+                req.errors(400, error.message);
+                if (req.errors) { req.reject(); }
             }
         }
 
+        this.on('postInvoice', async (req) => {
+            // debugger
 
+            // // Step 1: Extract folder ID from request data
+            // const DocumentStore = await cds.connect.to('DocumentStore');
+            // const folderId = req.data.dmsFolder;
+            // if (!folderId) {
+            //     return req.error(400, "Folder ID is required.");
+            // }
+
+            // // Step 2: Define destination and DMS API details
+            // const dmsDestination = "sap_process_automation_document_store"; // The destination name configured in SAP BTP cockpit
+            // const folderUrl = `/browser/${folderId}`; // API endpoint for browsing folder content
+
+            // // Step 3: Fetch the documents in the folder using DMS API
+            // const dmsResponse = await cds.connect.to('DMSAPI').run({
+            //     method: "GET",
+            //     url: folderUrl,
+            //     headers: {
+            //         'Content-Type': 'application/json',
+            //     }
+            // });
+
+            // if (!dmsResponse || !dmsResponse.value || dmsResponse.value.length === 0) {
+            //     return req.error(404, `No documents found in the folder with ID ${folderId}`);
+            // }
+
+            // // Step 4: Extract document details
+            // const documents = dmsResponse.value;
+            // console.log("Retrieved Documents:", documents);
+
+            // // Example: Process the first document
+            // const firstDocument = documents[0];
+            // console.log("First Document Metadata:", firstDocument);
+
+            // // Step 5: Download the first document
+            // const downloadUrl = `/browser/${folderId}/${firstDocument.Id}/content`; // API endpoint for downloading the file
+            // const documentContent = await cds.connect.to('DMSAPI').run({
+            //     method: "GET",
+            //     url: downloadUrl,
+            //     responseType: "stream", // Adjust based on the content type
+            // });
+
+            // // Save the document content or process it further
+            // console.log("Document Content Retrieved:", documentContent);
+
+            const newInvoice = {
+                data: {
+                    fiscalYear: new Date(req.data.documentDate).getFullYear().toString(),
+                    documentCurrency_code: req.data.currencyCode,
+                    documentDate: new Date(req.data.documentDate),
+                    postingDate: new Date(req.data.documentDate),
+                    supInvParty: req.data.senderName.substring(0, 10), // Truncate if necessary
+                    invGrossAmount: parseFloat(req.data.grossAmount),
+                    // comments: "Extracted from Email",
+                    to_InvoiceItem: req.data.to_Item.map((lineItem, index) => ({
+                        supplierInvoice: req.data.documentNumber,
+                        fiscalYear: new Date(req.data.documentDate).getFullYear().toString(),
+                        sup_InvoiceItem: (index + 1).toString().padStart(5, "0"),
+                        purchaseOrder: req.data.purchaseOrderNumber,
+                        purchaseOrderItem: (index + 1).toString().padStart(5, "0"),
+                        documentCurrency_code: req.data.currencyCode,
+                        supInvItemAmount: parseFloat(lineItem.netAmount),
+                        poQuantityUnit: lineItem.unitOfMeasure,
+                        quantityPOUnit: parseFloat(lineItem.quantity)
+                    })),
+                    mode: 'email',
+                    DraftAdministrativeData_DraftUUID: cds.utils.uuid(),
+                    IsActiveEntity: true
+                }
+            };
+
+            const oInvoice = await this.send({
+                query: INSERT.into(Invoice).entries(newInvoice.data),
+                event: "NEW",
+            });
+
+            // const dbUpdatePayload = {
+            //     DraftAdministrativeData_DraftUUID: oInvoice.DraftAdministrativeData_DraftUUID,
+            //     IsActiveEntity: true
+            // };
+
+
+            // await db.run(
+            //     UPDATE(Invoice.drafts)
+            //         .set(dbUpdatePayload)
+            //         .where({ ID: oInvoice.ID })
+            // );
+
+            // const entitySet = await db.run(
+            //     SELECT.one.from(Invoice.drafts)
+            //         .columns(cpx => {
+            //             cpx`*`,
+            //                 cpx.to_InvoiceItem(cfy => { cfy`*` })
+            //         })
+            //         .where({ ID: oInvoice.ID })
+            // );
+
+            // await INSERT(entitySet).into(Invoice);
+
+            // await DELETE(Invoice.drafts).where({
+            //     DraftAdministrativeData_DraftUUID: oInvoice.DraftAdministrativeData_DraftUUID,
+            // });
+
+        });
 
         // this.on('threewaymatch', 'Invoice', async req => {
         //     try {

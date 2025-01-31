@@ -18,43 +18,7 @@ service InvCatalogService @(requires: 'authenticated-user') {
             *
         };
 
-    entity Invoice                  as projection on persistence.InvoiceEntity
-        actions {
-            // @(
-            //     cds.odata.bindingparameter.name: '_it',
-            //     Common.SideEffects             : {TargetProperties: ['_it/status']}
-            // )
-            // action threewaymatch()         returns {
-            //     FiscalYear : String(4);
-            //     CompanyCode : String(4);
-            //     DocumentDate : Date;
-            //     PostingDate : Date;
-            //     SupplierInvoiceIDByInvcgParty : String(10);
-            //     DocumentCurrency : String(3);
-            //     InvoiceGrossAmount : String;
-            //     status : String(200);
-            //     comments : String(150);
-            //     newInvoice : String(10);
-            //     to_SuplrInvcItemPurOrdRef : many {
-            //         SupplierInvoice : String(10);
-            //         FiscalYear : String(4);
-            //         SupplierInvoiceItem : String(5);
-            //         PurchaseOrder : String(10);
-            //         PurchaseOrderItem : String(5);
-            //         ReferenceDocument : String(10);
-            //         ReferenceDocumentFiscalYear : String(4);
-            //         ReferenceDocumentItem : String(5);
-            //         TaxCode : String(3);
-            //         DocumentCurrency : String(3);
-            //         SupplierInvoiceItemAmount : String;
-            //         PurchaseOrderQuantityUnit : String(3);
-            //         QuantityInPurchaseOrderUnit : String;
-            //     }
-            // };
-            action copyInvoice(in : $self) returns Invoice;
-        };
-
-
+    entity Invoice                  as projection on persistence.InvoiceEntity;
     entity InvoiceItem              as projection on persistence.InvoiceEntity.to_InvoiceItem;
 
     entity A_MaterialDocumentHeader as
@@ -62,9 +26,36 @@ service InvCatalogService @(requires: 'authenticated-user') {
             *
         };
 
-    @readonly
     entity Currencies               as projection on common.Currencies;
-
-    @readonly
     entity StatusValues             as projection on persistence.StatusValues;
+
+    action postInvoice(documentNumber : String,
+                               netAmount : String,
+                               taxId : String,
+                               taxName : String,
+                               purchaseOrderNumber : String,
+                               grossAmount : String,
+                               currencyCode : String,
+                               receiverContact : String,
+                               documentDate : String,
+                               taxAmount : String,
+                               taxRate : String,
+                               receiverName : String,
+                               receiverAddress : String,
+                               paymentTerms : String,
+                               senderAddress : String,
+                               senderName : String,
+                               dmsFolder : String,
+                               to_Item : many {
+        description : String;
+        netAmount : String;
+        quantity : String;
+        unitPrice : String;
+        materialNumber : String;
+        unitOfMeasure : String;
+    }) returns {
+        message : String;
+        indicator : String;
+        invoiceId : String;
+    };
 }

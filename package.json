@@ -26,7 +26,7 @@
     "querystring": "^0.2.1"
   },
   "peerDependencies": {
-    "@sap/cds": "^8.5.1"
+    "@sap/cds": "^8.7.0"
   },
   "devDependencies": {
     "@cap-js/cds-types": "^0.7.0",
@@ -43,7 +43,7 @@
     "build": "rimraf resources mta_archives && mbt build --mtar archive",
     "deploy": "cf deploy mta_archives/archive.mtar --retries 1",
     "clean": "rimraf \"**/*mta_archives\" \"**/*gen\" \"**/*resources\" \"**/*dist\" \"**/*node_modules\" \"**/*package-lock.json\"",
-    "all": "npm run clean && npm run cds && npm run build && npm run deploy",
+    "all": "npm run clean && npm install && npm run cds && npm run build && npm run deploy",
     "watch-zinvoicesmain": "cds watch --open zinvoicesmain/webapp/index.html?sap-ui-xx-viewCache=false",
     "hybrid": "cds watch --profile hybrid",
     "kill": "lsof -i :4004 | grep LISTEN | awk '{print $2}' | xargs kill -9 || echo 'No process running on port 4004'"
@@ -82,6 +82,13 @@
           "path": "/document/jobs"
         }
       },
+      "DocumentStore": {
+        "kind": "rest",
+        "credentials": {
+          "destination": "sap_process_automation_document_store",
+          "path": "/document/jobs"
+        }
+      },
       "CE_PURCHASEORDER_0001": {
         "kind": "odata",
         "csrf": true,
@@ -115,6 +122,11 @@
     }
   },
   "sapux": [
-    "app/zinvoicesmain"
+    "app/zinvoicesmain",
+    "app/zinvoicesstatusvalues",
+    "app/zinvoicescurrencies",
+    "app/zinvoicestatusvalues",
+    "app/zcurrencies",
+    "app/zinvoicestatusvalues"
   ]
 }

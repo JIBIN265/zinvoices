@@ -1,4 +1,7 @@
 
-using from './zinvoicesmain/webapp/annotations';
-// using from './zinvoicesmain/webapp/c';
-// using from '../srv/cat-service';
+using from './zinvoicesmain/annotations';
+using from '../srv/cat-service';
+
+using from './zcurrencies/annotations';
+
+using from './zinvoicestatusvalues/annotations';
