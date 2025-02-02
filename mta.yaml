@@ -113,6 +113,10 @@ modules:
       - zcurrencies.zip
       name: zcurrencies
       target-path: resources/
+    - artifacts:
+      - zmaterial.zip
+      name: zmaterial
+      target-path: resources/
 - name: zinvoicesmain
   type: html5
   path: app/zinvoicesmain
@@ -136,6 +140,16 @@ modules:
 - name: zcurrencies
   type: html5
   path: app/zcurrencies
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: zmaterial
+  type: html5
+  path: app/zmaterial
   build-parameters:
     build-result: dist
     builder: custom

@@ -9,7 +9,6 @@ using {Attachments} from '@cap-js/sdm';
 namespace zsupplier;
 
 entity InvoiceEntity : cuid, managed, {
-  @description: 'Product Group Association'
   documentId       : Integer;
   fiscalYear       : String(4);
   companyCode      : String(4);
@@ -31,8 +30,6 @@ entity InvoiceEntity : cuid, managed, {
 }
 
 aspect InvoiceItemEntity : cuid, managed {
-
-  @description: 'Product Restriction ID'
   supplierInvoice   : String(10);
   fiscalYear        : String(4);
   sup_InvoiceItem   : String(5);
@@ -55,4 +52,39 @@ entity StatusValues {
       deletePossible : Boolean;
       insertPossible : Boolean;
       updatePossible : Boolean;
+}
+
+
+entity MaterialEntity : cuid, managed, {
+  documentId                 : Integer;
+  documentDate               : Date;
+  postingDate                : Date;
+  MaterialDocumentHeaderText : String(50);
+  ReferenceDocument          : String(10);
+  VersionForPrintingSlip     : String(1);
+  GoodsMovementCode          : String(2);
+  status                     : String(200);
+  statusFlag                 : String(1);
+  MaterialDocument           : String(10);
+  MaterialDocumentYear       : String(4);
+  InventoryTransactionType   : String(2);
+  statusColor                : Association to one StatusValues
+                                 on statusColor.code = statusFlag;
+  to_MaterialItem            : Composition of many MaterialItemEntity;
+
+  @description: 'Attachments Composition'
+  attachments                : Composition of many Attachments;
+}
+
+aspect MaterialItemEntity : cuid, managed {
+  Material                : String(10);
+  Plant                   : String(4);
+  StorageLocation         : String(4);
+  purchaseOrder           : String(10);
+  purchaseOrderItem       : String(5);
+  GoodsMovementType       : String(3);
+  Supplier                : String(10);
+  GoodsMovementRefDocType : String(1);
+  EntryUnit               : String(2);
+  QuantityInEntryUnit     : String(6);
 }

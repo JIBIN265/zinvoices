@@ -46,7 +46,8 @@
     "all": "npm run clean && npm install && npm run cds && npm run build && npm run deploy",
     "watch-zinvoicesmain": "cds watch --open zinvoicesmain/webapp/index.html?sap-ui-xx-viewCache=false",
     "hybrid": "cds watch --profile hybrid",
-    "kill": "lsof -i :4004 | grep LISTEN | awk '{print $2}' | xargs kill -9 || echo 'No process running on port 4004'"
+    "kill": "lsof -i :4004 | grep LISTEN | awk '{print $2}' | xargs kill -9 || echo 'No process running on port 4004'",
+    "watch-zmaterial": "cds watch --open zmaterial/webapp/index.html?sap-ui-xx-viewCache=false"
   },
   "cds": {
     "requires": {
@@ -127,6 +128,7 @@
     "app/zinvoicescurrencies",
     "app/zinvoicestatusvalues",
     "app/zcurrencies",
-    "app/zinvoicestatusvalues"
+    "app/zinvoicestatusvalues",
+    "app/zmaterial"
   ]
 }

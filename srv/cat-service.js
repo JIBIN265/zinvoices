@@ -3,10 +3,11 @@ const SequenceHelper = require("./lib/SequenceHelper");
 const FormData = require('form-data');
 const { SELECT } = require('@sap/cds/lib/ql/cds-ql');
 const LOG = cds.log('cat-service.js')
-const axios = require('axios');
+const axios = require("axios");
 const { S3Client, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const MAX_RETRIES = 30;
 const RETRY_DELAY_MS = 3000;
+const { retrieveJwt, getDestination } = require("@sap-cloud-sdk/connectivity");
 
 
 class InvCatalogService extends cds.ApplicationService {
@@ -14,6 +15,8 @@ class InvCatalogService extends cds.ApplicationService {
         const {
             Invoice,
             InvoiceItem,
+            Material,
+            MaterialItem,
             PurchaseOrder,
             PurchaseOrderItem,
             A_MaterialDocumentHeader,
@@ -49,6 +52,100 @@ class InvCatalogService extends cds.ApplicationService {
 
         });
 
+        // async function getAccessToken() {
+        //     try {
+        //         const response = await axios.post("https://yk2lt6xsylvfx4dz.authentication.us10.hana.ondemand.com/oauth/token", 
+        //             new URLSearchParams({
+        //                 grant_type: "client_credentials"
+        //             }), 
+        //             {
+        //                 auth: {
+        //                     username: "sb-80a5d54d-551a-46df-a50d-a6e9029d7583!b220961|sdm-di-DocumentManagement-sdm_integration!b6332",
+        //                     password: "c620d9f1-c30e-46de-9a09-1684b6e79863$AbOl_oCsyX6SE1fKxv_cWSYnrknr4WCtIk_Ely432sE="
+        //                 },
+        //                 headers: {
+        //                     "Content-Type": "application/x-www-form-urlencoded"
+        //                 }
+        //             }
+        //         );
+
+        //         return response.data.access_token;
+        //     } catch (error) {
+        //         console.error("Error fetching access token:", error);
+        //         throw new Error("Failed to retrieve access token.");
+        //     }
+        // }
+
+        // async function getAttachmentContent(url) {
+        //     try {
+        //         const token = await getAccessToken();
+        //         const response = await axios.get(url, {
+        //             responseType: "arraybuffer",  // Ensures binary data is retrieved
+        //             headers: {
+        //                 "Authorization": `Bearer ${token}`
+        //             }
+        //         });
+
+        //         return response.data;  // This will be the file content in buffer format
+        //     } catch (error) {
+        //         console.error("Error fetching attachment content:", error);
+        //         throw new Error("Failed to retrieve attachment content.");
+        //     }
+        // }
+
+        this.before("SAVE", Material, async (req) => {
+            debugger;
+            // try {
+            //     const {
+            //         fiscalYear,
+            //         companyCode,
+            //         documentDate,
+            //         postingDate,
+            //         supInvParty,
+            //         documentCurrency_code,
+            //         invGrossAmount,
+            //         to_InvoiceItem,
+            //     } = req.data;
+
+            //     // Prepare the payload
+            //     const payload = {
+            //         FiscalYear: fiscalYear,
+            //         CompanyCode: companyCode,
+            //         DocumentDate: `/Date(${new Date(documentDate).getTime()})/`,
+            //         PostingDate: `/Date(${new Date(postingDate).getTime()})/`,
+            //         CreationDate: `/Date(${Date.now()})/`, // Current timestamp
+            //         SupplierInvoiceIDByInvcgParty: supInvParty,
+            //         DocumentCurrency: documentCurrency_code,
+            //         InvoiceGrossAmount: invGrossAmount,//.toString(),
+            //         to_SuplrInvcItemPurOrdRef: to_InvoiceItem.map(item => ({
+            //             SupplierInvoice: item.supplierInvoice,
+            //             FiscalYear: item.fiscalYear || fiscalYear,
+            //             SupplierInvoiceItem: item.sup_InvoiceItem,
+            //             PurchaseOrder: item.purchaseOrder,
+            //             PurchaseOrderItem: item.purchaseOrderItem,
+            //             ReferenceDocument: item.referenceDocument,
+            //             ReferenceDocumentFiscalYear: item.refDocFiscalYear,
+            //             ReferenceDocumentItem: item.refDocItem,
+            //             TaxCode: item.taxCode,
+            //             DocumentCurrency: item.documentCurrency_code || documentCurrency_code,
+            //             SupplierInvoiceItemAmount: item.supInvItemAmount,//.toString(),
+            //             PurchaseOrderQuantityUnit: item.poQuantityUnit,
+            //             QuantityInPurchaseOrderUnit: item.quantityPOUnit,//.toString(),
+            //         })),
+            //     };
+            //     // Post the payload to the destination
+            //     const response = await invoiceDest.post('/A_SupplierInvoice', payload);
+            //     req.data.newInvoice = response.SupplierInvoice;
+            //     return req;
+            // } catch (error) {
+            //     console.error('Error while posting invoice:', error.message);
+            //     req.data.statusFlag = 'E';
+            //     req.data.status = error.message;
+            //     req.errors(400, error.message);
+            //     if (req.errors) { req.reject(); }
+            // }
+        });
+
         this.before("SAVE", Invoice, async (req) => {
             if (req.data.mode === 'email') {
                 const documentId = new SequenceHelper({
@@ -71,12 +168,29 @@ class InvCatalogService extends cds.ApplicationService {
                     SELECT.from(Invoice.drafts)
                         .columns(cpx => {
                             cpx`*`,
-                                cpx.attachments(cfy => { cfy`content` });
+                                cpx.attachments(cfy => {
+                                    cfy`content`,
+                                        cfy`mimeType`,
+                                        cfy`folderId`,
+                                        cfy`url`
+                                });
                         })
                         .where({
                             ID: req.data.ID
                         })
                 );
+
+                // if (allRecords.length > 0 && allRecords[0].attachments?.length > 0) {
+                //     const attachment = allRecords[0].attachments[0];
+
+                //     if (attachment.url) {
+                //         const content = await getAttachmentContent(attachment.url);
+                //         console.log("Attachment Content:", content);  // Now you have the file content
+                //     } else {
+                //         console.log("No URL found for the attachment.");
+                //     }
+                // }
+
                 let fileBuffer;
                 if (allRecords[0].attachments[0].content) {
                     try {

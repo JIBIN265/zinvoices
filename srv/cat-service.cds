@@ -18,8 +18,21 @@ service InvCatalogService @(requires: 'authenticated-user') {
             *
         };
 
-    entity Invoice                  as projection on persistence.InvoiceEntity;
+    entity Invoice                  as projection on persistence.InvoiceEntity
+        actions {
+            @(Common.SideEffects.TargetEntities: ['/InvCatalogService.EntityContainer/Invoice'])
+            action copyInvoice(in : $self) returns Invoice;
+        };
+
     entity InvoiceItem              as projection on persistence.InvoiceEntity.to_InvoiceItem;
+
+    entity Material                 as projection on persistence.MaterialEntity
+        actions {
+            @(Common.SideEffects.TargetEntities: ['/InvCatalogService.EntityContainer/Material'])
+            action copyMaterial(in : $self) returns Material;
+        };
+
+    entity MaterialItem             as projection on persistence.MaterialEntity.to_MaterialItem;
 
     entity A_MaterialDocumentHeader as
         projection on gr.A_MaterialDocumentHeader {
@@ -30,23 +43,23 @@ service InvCatalogService @(requires: 'authenticated-user') {
     entity StatusValues             as projection on persistence.StatusValues;
 
     action postInvoice(documentNumber : String,
-                               netAmount : String,
-                               taxId : String,
-                               taxName : String,
-                               purchaseOrderNumber : String,
-                               grossAmount : String,
-                               currencyCode : String,
-                               receiverContact : String,
-                               documentDate : String,
-                               taxAmount : String,
-                               taxRate : String,
-                               receiverName : String,
-                               receiverAddress : String,
-                               paymentTerms : String,
-                               senderAddress : String,
-                               senderName : String,
-                               dmsFolder : String,
-                               to_Item : many {
+                       netAmount : String,
+                       taxId : String,
+                       taxName : String,
+                       purchaseOrderNumber : String,
+                       grossAmount : String,
+                       currencyCode : String,
+                       receiverContact : String,
+                       documentDate : String,
+                       taxAmount : String,
+                       taxRate : String,
+                       receiverName : String,
+                       receiverAddress : String,
+                       paymentTerms : String,
+                       senderAddress : String,
+                       senderName : String,
+                       dmsFolder : String,
+                       to_Item : many {
         description : String;
         netAmount : String;
         quantity : String;
