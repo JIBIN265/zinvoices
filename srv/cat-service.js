@@ -52,6 +52,24 @@ class InvCatalogService extends cds.ApplicationService {
 
         });
 
+        this.before("NEW", Material.drafts, async (req) => {
+            // console.log(req.target.name)
+            if (req.target.name !== "InvCatalogService.Material.drafts") { return; }
+            const { ID } = req.data;
+            req.data.statusFlag = 'D';
+
+            const documentId = new SequenceHelper({
+                db: db,
+                sequence: "ZMATERIAL_DOCUMENT_ID",
+                table: "zsupplier_MaterialEntity",
+                field: "documentId",
+            });
+
+            let number = await documentId.getNextNumber();
+            req.data.documentId = number.toString();;
+
+        });
+
         // async function getAccessToken() {
         //     try {
         //         const response = await axios.post("https://yk2lt6xsylvfx4dz.authentication.us10.hana.ondemand.com/oauth/token", 
@@ -95,55 +113,43 @@ class InvCatalogService extends cds.ApplicationService {
 
         this.before("SAVE", Material, async (req) => {
             debugger;
-            // try {
-            //     const {
-            //         fiscalYear,
-            //         companyCode,
-            //         documentDate,
-            //         postingDate,
-            //         supInvParty,
-            //         documentCurrency_code,
-            //         invGrossAmount,
-            //         to_InvoiceItem,
-            //     } = req.data;
+            try {
 
-            //     // Prepare the payload
-            //     const payload = {
-            //         FiscalYear: fiscalYear,
-            //         CompanyCode: companyCode,
-            //         DocumentDate: `/Date(${new Date(documentDate).getTime()})/`,
-            //         PostingDate: `/Date(${new Date(postingDate).getTime()})/`,
-            //         CreationDate: `/Date(${Date.now()})/`, // Current timestamp
-            //         SupplierInvoiceIDByInvcgParty: supInvParty,
-            //         DocumentCurrency: documentCurrency_code,
-            //         InvoiceGrossAmount: invGrossAmount,//.toString(),
-            //         to_SuplrInvcItemPurOrdRef: to_InvoiceItem.map(item => ({
-            //             SupplierInvoice: item.supplierInvoice,
-            //             FiscalYear: item.fiscalYear || fiscalYear,
-            //             SupplierInvoiceItem: item.sup_InvoiceItem,
-            //             PurchaseOrder: item.purchaseOrder,
-            //             PurchaseOrderItem: item.purchaseOrderItem,
-            //             ReferenceDocument: item.referenceDocument,
-            //             ReferenceDocumentFiscalYear: item.refDocFiscalYear,
-            //             ReferenceDocumentItem: item.refDocItem,
-            //             TaxCode: item.taxCode,
-            //             DocumentCurrency: item.documentCurrency_code || documentCurrency_code,
-            //             SupplierInvoiceItemAmount: item.supInvItemAmount,//.toString(),
-            //             PurchaseOrderQuantityUnit: item.poQuantityUnit,
-            //             QuantityInPurchaseOrderUnit: item.quantityPOUnit,//.toString(),
-            //         })),
-            //     };
-            //     // Post the payload to the destination
-            //     const response = await invoiceDest.post('/A_SupplierInvoice', payload);
-            //     req.data.newInvoice = response.SupplierInvoice;
-            //     return req;
-            // } catch (error) {
-            //     console.error('Error while posting invoice:', error.message);
-            //     req.data.statusFlag = 'E';
-            //     req.data.status = error.message;
-            //     req.errors(400, error.message);
-            //     if (req.errors) { req.reject(); }
-            // }
+                //     // Prepare the payload
+                const payload = {
+                    DocumentDate: `/Date(${new Date(req.data.documentDate).getTime()})/`,
+                    PostingDate: `/Date(${new Date(req.data.postingDate).getTime()})/`,
+                    MaterialDocumentHeaderText: req.data.MaterialDocumentHeaderText,
+                    ReferenceDocument: req.data.ReferenceDocument,
+                    VersionForPrintingSlip: req.data.VersionForPrintingSlip,
+                    GoodsMovementCode: req.data.GoodsMovementCode,
+                    to_MaterialDocumentItem: req.data.to_MaterialItem.map(item => ({
+                        Material: item.Material,
+                        Plant: item.Plant,
+                        StorageLocation: item.StorageLocation,
+                        GoodsMovementType: item.GoodsMovementType,
+                        Supplier: item.Supplier,
+                        PurchaseOrder: item.purchaseOrder,
+                        PurchaseOrderItem: item.purchaseOrderItem,
+                        GoodsMovementRefDocType: item.GoodsMovementRefDocType,
+                        EntryUnit: item.EntryUnit,
+                        QuantityInEntryUnit: item.QuantityInEntryUnit,
+                    })),
+                };
+                //     // Post the payload to the destination
+                const response = await grs.post('/A_MaterialDocumentHeader', payload);
+                req.data.MaterialDocument = response.MaterialDocument;
+                req.data.MaterialDocumentYear = response.MaterialDocumentYear;
+                req.data.InventoryTransactionType = response.InventoryTransactionType;
+                req.data.status = 'Material Document Created'
+                //     return req;
+            } catch (error) {
+                console.error('Error while posting invoice:', error.message);
+                req.data.statusFlag = 'E';
+                req.data.status = error.message;
+                req.errors(400, error.message);
+                if (req.errors) { req.reject(); }
+            }
         });
 
         this.before("SAVE", Invoice, async (req) => {

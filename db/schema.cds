@@ -4,7 +4,6 @@ using {
   Currency,
   managed,
 } from '@sap/cds/common';
-using {Attachments} from '@cap-js/sdm';
 
 namespace zsupplier;
 
@@ -24,9 +23,6 @@ entity InvoiceEntity : cuid, managed, {
                        on statusColor.code = statusFlag;
   newInvoice       : String(10);
   to_InvoiceItem   : Composition of many InvoiceItemEntity;
-
-  @description: 'Attachments Composition'
-  attachments      : Composition of many Attachments;
 }
 
 aspect InvoiceItemEntity : cuid, managed {
@@ -71,9 +67,6 @@ entity MaterialEntity : cuid, managed, {
   statusColor                : Association to one StatusValues
                                  on statusColor.code = statusFlag;
   to_MaterialItem            : Composition of many MaterialItemEntity;
-
-  @description: 'Attachments Composition'
-  attachments                : Composition of many Attachments;
 }
 
 aspect MaterialItemEntity : cuid, managed {

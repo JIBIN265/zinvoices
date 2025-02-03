@@ -7,32 +7,32 @@ annotate service.Material with @(
         Data : [
             {
                 $Type: 'UI.DataField',
-                Label: 'documentDate',
+                Label: '{i18n>DocumentDate}',
                 Value: documentDate,
             },
             {
                 $Type: 'UI.DataField',
-                Label: 'postingDate',
+                Label: '{i18n>PostingDate}',
                 Value: postingDate,
             },
             {
                 $Type: 'UI.DataField',
-                Label: 'MaterialDocumentHeaderText',
+                Label: '{i18n>MaterialDocumentHeaderText}',
                 Value: MaterialDocumentHeaderText,
             },
             {
                 $Type: 'UI.DataField',
-                Label: 'ReferenceDocument',
+                Label: '{i18n>ReferenceDocument}',
                 Value: ReferenceDocument,
             },
             {
                 $Type: 'UI.DataField',
-                Label: 'VersionForPrintingSlip',
+                Label: '{i18n>VersionForPrintingSlip}',
                 Value: VersionForPrintingSlip,
             },
             {
                 $Type: 'UI.DataField',
-                Label: 'GoodsMovementCode',
+                Label: '{i18n>GoodsMovementCode}',
                 Value: GoodsMovementCode,
             },
         ],
@@ -41,12 +41,12 @@ annotate service.Material with @(
         {
             $Type : 'UI.ReferenceFacet',
             ID    : 'GeneratedFacet1',
-            Label : 'General Information',
+            Label : '{i18n>GeneralInformation}',
             Target: '@UI.FieldGroup#GeneratedGroup',
         },
         {
             $Type : 'UI.ReferenceFacet',
-            Label : 'Material Item Details',
+            Label : '{i18n>MaterialItemDetails}',
             ID    : 'MaterialItemDetails',
             Target: 'to_MaterialItem/@UI.LineItem#MaterialItemDetails',
         },
@@ -54,48 +54,48 @@ annotate service.Material with @(
     UI.LineItem                           : [
         {
             $Type: 'UI.DataField',
-            Label: 'documentId',
+            Label: '{i18n>DocumentId1}',
             Value: documentId,
         },
         {
             $Type: 'UI.DataField',
             Value: status,
-            Label: 'status',
+            Label: '{i18n>Status}',
         },
         {
             $Type: 'UI.DataField',
             Value: MaterialDocumentYear,
-            Label: 'MaterialDocumentYear',
+            Label: '{i18n>Materialdocumentyear}',
         },
         {
             $Type: 'UI.DataField',
             Value: MaterialDocument,
-            Label: 'MaterialDocument',
+            Label: '{i18n>MaterialDocument}',
         },
         {
             $Type: 'UI.DataField',
-            Label: 'ReferenceDocument',
+            Label: '{i18n>ReferenceDocument}',
             Value: ReferenceDocument,
         },
         {
             $Type: 'UI.DataField',
-            Label: 'documentDate',
+            Label: '{i18n>DocumentDate}',
             Value: documentDate,
         },
         {
             $Type: 'UI.DataField',
-            Label: 'postingDate',
+            Label: '{i18n>PostingDate}',
             Value: postingDate,
         },
         {
             $Type: 'UI.DataField',
-            Label: 'MaterialDocumentHeaderText',
+            Label: '{i18n>MaterialDocumentHeaderText}',
             Value: MaterialDocumentHeaderText,
         },
         {
             $Type: 'UI.DataField',
             Value: InventoryTransactionType,
-            Label: 'InventoryTransactionType',
+            Label: '{i18n>InventoryTransactionType}',
         },
     ],
     UI.FieldGroup #i18nMaterialItemDetails: {
@@ -173,17 +173,17 @@ annotate service.Material with @(
             {
                 $Type: 'UI.DataField',
                 Value: documentId,
-                Label: 'documentId',
+                Label: '{i18n>DocumentId1}',
             },
             {
                 $Type: 'UI.DataField',
                 Value: MaterialDocument,
-                Label: 'MaterialDocument',
+                Label: '{i18n>MaterialDocument}',
             },
             {
                 $Type: 'UI.DataField',
                 Value: MaterialDocumentYear,
-                Label: 'MaterialDocumentYear',
+                Label: '{i18n>MaterialDocumentYear}',
             },
         ],
     },
@@ -205,51 +205,51 @@ annotate service.MaterialItem with @(UI.LineItem #MaterialItemDetails: [
     {
         $Type: 'UI.DataField',
         Value: Material,
-        Label: 'Material',
+        Label: '{i18n>Material}',
     },
     {
         $Type: 'UI.DataField',
         Value: Plant,
-        Label: 'Plant',
+        Label: '{i18n>Plant}',
     },
     {
         $Type: 'UI.DataField',
         Value: purchaseOrder,
-        Label: 'purchaseOrder',
+        Label: '{i18n>PurchaseOrder}',
     },
     {
         $Type: 'UI.DataField',
         Value: purchaseOrderItem,
-        Label: 'purchaseOrderItem',
+        Label: '{i18n>PurchaseOrderItem}',
     },
     {
         $Type: 'UI.DataField',
         Value: Supplier,
-        Label: 'Supplier',
+        Label: '{i18n>Supplier}',
     },
     {
         $Type: 'UI.DataField',
         Value: StorageLocation,
-        Label: 'StorageLocation',
+        Label: '{i18n>StorageLocation}',
     },
     {
         $Type: 'UI.DataField',
         Value: EntryUnit,
-        Label: 'EntryUnit',
+        Label: '{i18n>EntryUnit}',
     },
     {
         $Type: 'UI.DataField',
         Value: GoodsMovementRefDocType,
-        Label: 'GoodsMovementRefDocType',
+        Label: '{i18n>GoodsMovementRefDoc}',
     },
     {
         $Type: 'UI.DataField',
         Value: GoodsMovementType,
-        Label: 'GoodsMovementType',
+        Label: '{i18n>GoodsMovementType}',
     },
     {
         $Type: 'UI.DataField',
         Value: QuantityInEntryUnit,
-        Label: 'QuantityInEntryUnit',
+        Label: '{i18n>QuantityInEntryUnit}',
     },
 ]);

@@ -138,7 +138,8 @@
               "controlConfiguration": {
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "tableSettings": {
-                    "type": "ResponsiveTable"
+                    "type": "ResponsiveTable",
+                    "widthIncludingColumnHeader": true
                   }
                 }
               },
@@ -156,7 +157,19 @@
             "settings": {
               "editableHeaderContent": false,
               "contextPath": "/Material",
-              "navigation": {}
+              "navigation": {},
+              "controlConfiguration": {
+                "to_MaterialItem/@com.sap.vocabularies.UI.v1.LineItem#MaterialItemDetails": {
+                  "tableSettings": {
+                    "enableFullScreen": true,
+                    "widthIncludingColumnHeader": true,
+                    "creationMode": {
+                      "name": "InlineCreationRows"
+                    },
+                    "type": "GridTable"
+                  }
+                }
+              }
             }
           },
           "controlAggregation": "midColumnPages",

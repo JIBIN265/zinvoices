@@ -2,6 +2,7 @@ using zsupplier as persistence from '../db/schema';
 using {sap.common as common} from '../db/common';
 using {CE_PURCHASEORDER_0001 as po} from './external/CE_PURCHASEORDER_0001';
 using {API_MATERIAL_DOCUMENT_SRV as gr} from './external/API_MATERIAL_DOCUMENT_SRV';
+using {Attachments} from '@cap-js/sdm';
 
 service InvCatalogService @(requires: 'authenticated-user') {
 
@@ -26,6 +27,11 @@ service InvCatalogService @(requires: 'authenticated-user') {
 
     entity InvoiceItem              as projection on persistence.InvoiceEntity.to_InvoiceItem;
 
+    extend persistence.InvoiceEntity with {
+        @description: 'Attachments Composition'
+        attachments : Composition of many Attachments;
+    };
+
     entity Material                 as projection on persistence.MaterialEntity
         actions {
             @(Common.SideEffects.TargetEntities: ['/InvCatalogService.EntityContainer/Material'])
@@ -33,6 +39,11 @@ service InvCatalogService @(requires: 'authenticated-user') {
         };
 
     entity MaterialItem             as projection on persistence.MaterialEntity.to_MaterialItem;
+
+    extend persistence.MaterialEntity with {
+        @description: 'Attachments Composition'
+        attachments : Composition of many Attachments;
+    };
 
     entity A_MaterialDocumentHeader as
         projection on gr.A_MaterialDocumentHeader {

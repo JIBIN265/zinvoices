@@ -1,7 +1,7 @@
 _schema-version: 3.3.0
 ID: zinvoices
 description: Invoice Extraction and Three Way Matchings
-version: 1.0.10
+version: 1.0.0
 modules:
 - name: zinvoices-srv
   type: nodejs
@@ -230,6 +230,5 @@ build-parameters:
   before-all:
   - builder: custom
     commands:
-    - npm ci
     - npx cds build --production
     - npx rimraf gen/db/src/gen/data
