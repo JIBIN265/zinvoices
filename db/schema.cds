@@ -8,21 +8,25 @@ using {
 namespace zsupplier;
 
 entity InvoiceEntity : cuid, managed, {
-  documentId       : Integer;
-  fiscalYear       : String(4);
-  companyCode      : String(4);
-  documentDate     : Date;
-  postingDate      : Date;
-  supInvParty      : String(10);
-  documentCurrency : Association to one sap.common.Currencies;
-  invGrossAmount   : Decimal(13, 3);
-  status           : String(200);
-  statusFlag       : String(1);
-  mode             : String(10);
-  statusColor      : Association to one StatusValues
-                       on statusColor.code = statusFlag;
-  newInvoice       : String(10);
-  to_InvoiceItem   : Composition of many InvoiceItemEntity;
+  documentId             : Integer;
+  fiscalYear             : String(4);
+  companyCode            : String(4);
+  documentDate           : Date;
+  postingDate            : Date;
+  supInvParty            : String(10);
+  documentCurrency       : Association to one sap.common.Currencies;
+  invGrossAmount         : Decimal(13, 3);
+  DocumentHeaderText     : String(50);
+  PaymentTerms           : String(4);
+  AccountingDocumentType : String(4);
+  InvoicingParty         : String(10);
+  status                 : String(200);
+  statusFlag             : String(1);
+  mode                   : String(10);
+  statusColor            : Association to one StatusValues
+                             on statusColor.code = statusFlag;
+  newInvoice             : String(10);
+  to_InvoiceItem         : Composition of many InvoiceItemEntity;
 }
 
 aspect InvoiceItemEntity : cuid, managed {
@@ -39,6 +43,9 @@ aspect InvoiceItemEntity : cuid, managed {
   supInvItemAmount  : Decimal(13, 3);
   poQuantityUnit    : String(3);
   quantityPOUnit    : Decimal(13, 3);
+  Plant             : String(4);
+  TaxJurisdiction   : String(4);
+  ProductType       : String(4);
 }
 
 entity StatusValues {

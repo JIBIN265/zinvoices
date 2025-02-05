@@ -41,6 +41,26 @@ annotate service.Invoice with @(
                 Label: '{i18n>GrossAmount}',
                 Value: invGrossAmount,
             },
+            {
+                $Type : 'UI.DataField',
+                Value : AccountingDocumentType,
+                Label : '{i18n>AccountingDocumentType}',
+            },
+            {
+                $Type : 'UI.DataField',
+                Value : InvoicingParty,
+                Label : '{i18n>InvoicingParty}',
+            },
+            {
+                $Type : 'UI.DataField',
+                Value : DocumentHeaderText,
+                Label : '{i18n>DocumentHeaderText}',
+            },
+            {
+                $Type : 'UI.DataField',
+                Value : PaymentTerms,
+                Label : '{i18n>PaymentTerms}',
+            },
         ],
     },
     UI.Facets                                             : [
@@ -599,43 +619,18 @@ annotate service.Invoice with @(
 annotate service.InvoiceItem with @(UI.LineItem #ItemDetails: [
     {
         $Type: 'UI.DataField',
-        Value: sup_InvoiceItem,
-        Label: '{i18n>InvoiceItem}',
-    },
-    {
-        $Type: 'UI.DataField',
-        Value: supplierInvoice,
-        Label: '{i18n>SupplierInvoice}',
-    },
-    {
-        $Type: 'UI.DataField',
-        Value: fiscalYear,
-        Label: '{i18n>FiscalYear}',
-    },
-    {
-        $Type: 'UI.DataField',
-        Value: documentCurrency_code,
-        Label: '{i18n>DocumentCurrency}',
-    },
-    {
-        $Type: 'UI.DataField',
-        Value: supInvItemAmount,
-        Label: '{i18n>InvoiceItemAmount}',
-    },
-    {
-        $Type: 'UI.DataField',
-        Value: purchaseOrderItem,
-        Label: '{i18n>PoItem}',
-    },
-    {
-        $Type: 'UI.DataField',
         Value: purchaseOrder,
         Label: '{i18n>PurchaseOrder}',
     },
     {
         $Type: 'UI.DataField',
+        Value: purchaseOrderItem,
+        Label: 'PO Item',
+    },
+    {
+        $Type: 'UI.DataField',
         Value: poQuantityUnit,
-        Label: '{i18n>Unit}',
+        Label: '{i18n>UnitOfMeasure}',
     },
     {
         $Type: 'UI.DataField',
@@ -644,8 +639,33 @@ annotate service.InvoiceItem with @(UI.LineItem #ItemDetails: [
     },
     {
         $Type: 'UI.DataField',
-        Value: refDocItem,
-        Label: '{i18n>RefdocumentItem}',
+        Value: sup_InvoiceItem,
+        Label: '{i18n>InvoiceItem}',
+    },
+    {
+        $Type: 'UI.DataField',
+        Value: supInvItemAmount,
+        Label: 'Invoice Item Amount',
+    },
+    {
+        $Type : 'UI.DataField',
+        Value : taxCode,
+        Label : '{i18n>TaxCode}',
+    },
+    {
+        $Type : 'UI.DataField',
+        Value : Plant,
+        Label : '{i18n>Plant}',
+    },
+    {
+        $Type : 'UI.DataField',
+        Value : ProductType,
+        Label : '{i18n>ProductType}',
+    },
+    {
+        $Type : 'UI.DataField',
+        Value : TaxJurisdiction,
+        Label : '{i18n>TaxJurisdiction}',
     },
     {
         $Type: 'UI.DataField',
@@ -653,14 +673,14 @@ annotate service.InvoiceItem with @(UI.LineItem #ItemDetails: [
         Label: '{i18n>ReferenceDocument}',
     },
     {
-        $Type: 'UI.DataField',
-        Value: refDocFiscalYear,
-        Label: '{i18n>RefdocFiscalYear}',
+        $Type : 'UI.DataField',
+        Value : refDocFiscalYear,
+        Label : '{i18n>RefDocFiscalYear}',
     },
     {
-        $Type: 'UI.DataField',
-        Value: taxCode,
-        Label: '{i18n>TaxCode}',
+        $Type : 'UI.DataField',
+        Value : refDocItem,
+        Label : '{i18n>RefDocItem}',
     },
 ]);
 

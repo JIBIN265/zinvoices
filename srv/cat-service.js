@@ -70,49 +70,10 @@ class InvCatalogService extends cds.ApplicationService {
 
         });
 
-        // async function getAccessToken() {
-        //     try {
-        //         const response = await axios.post("https://yk2lt6xsylvfx4dz.authentication.us10.hana.ondemand.com/oauth/token", 
-        //             new URLSearchParams({
-        //                 grant_type: "client_credentials"
-        //             }), 
-        //             {
-        //                 auth: {
-        //                     username: "sb-80a5d54d-551a-46df-a50d-a6e9029d7583!b220961|sdm-di-DocumentManagement-sdm_integration!b6332",
-        //                     password: "c620d9f1-c30e-46de-9a09-1684b6e79863$AbOl_oCsyX6SE1fKxv_cWSYnrknr4WCtIk_Ely432sE="
-        //                 },
-        //                 headers: {
-        //                     "Content-Type": "application/x-www-form-urlencoded"
-        //                 }
-        //             }
-        //         );
-
-        //         return response.data.access_token;
-        //     } catch (error) {
-        //         console.error("Error fetching access token:", error);
-        //         throw new Error("Failed to retrieve access token.");
-        //     }
-        // }
-
-        // async function getAttachmentContent(url) {
-        //     try {
-        //         const token = await getAccessToken();
-        //         const response = await axios.get(url, {
-        //             responseType: "arraybuffer",  // Ensures binary data is retrieved
-        //             headers: {
-        //                 "Authorization": `Bearer ${token}`
-        //             }
-        //         });
-
-        //         return response.data;  // This will be the file content in buffer format
-        //     } catch (error) {
-        //         console.error("Error fetching attachment content:", error);
-        //         throw new Error("Failed to retrieve attachment content.");
-        //     }
-        // }
+       
 
         this.before("SAVE", Material, async (req) => {
-            debugger;
+
             try {
 
                 //     // Prepare the payload
@@ -185,17 +146,6 @@ class InvCatalogService extends cds.ApplicationService {
                             ID: req.data.ID
                         })
                 );
-
-                // if (allRecords.length > 0 && allRecords[0].attachments?.length > 0) {
-                //     const attachment = allRecords[0].attachments[0];
-
-                //     if (attachment.url) {
-                //         const content = await getAttachmentContent(attachment.url);
-                //         console.log("Attachment Content:", content);  // Now you have the file content
-                //     } else {
-                //         console.log("No URL found for the attachment.");
-                //     }
-                // }
 
                 let fileBuffer;
                 if (allRecords[0].attachments[0].content) {
@@ -288,35 +238,34 @@ class InvCatalogService extends cds.ApplicationService {
                     // Populate req.data.Invoice with mapped values
                     req.data.fiscalYear = new Date(headerFields.documentDate).getFullYear().toString();
                     req.data.documentCurrency_code = headerFields.currencyCode;
-                    req.data.documentDate = new Date(headerFields.documentDate);
-                    req.data.postingDate = new Date(headerFields.documentDate);
-                    req.data.supInvParty = headerFields.senderName.substring(0, 10); // Truncate if necessary
+                    // req.data.documentDate = `/Date(${Date.now()})/`;
+                    // req.data.postingDate = `/Date(${Date.now()})/`;
+                    req.data.supInvParty = 'SI4849'//headerFields.senderName.substring(0, 10); // Truncate if necessary
                     req.data.invGrossAmount = parseFloat(headerFields.grossAmount);
-                    // req.data.comments = "Extracted from document";
+                    req.data.companyCode = "2910";
                     req.data.to_InvoiceItem = lineItems.map((lineItem, index) => ({
-                        supplierInvoice: headerFields.documentNumber,
-                        fiscalYear: new Date(headerFields.documentDate).getFullYear().toString(),
                         sup_InvoiceItem: (index + 1).toString().padStart(5, "0"),
                         purchaseOrder: headerFields.purchaseOrderNumber,
-                        purchaseOrderItem: (index + 1).toString().padStart(5, "0"),
+                        purchaseOrderItem: (index + 10).toString().padStart(5, "0"),
                         documentCurrency_code: headerFields.currencyCode,
                         supInvItemAmount: parseFloat(lineItem.netAmount),
-                        poQuantityUnit: lineItem.unitOfMeasure,
-                        quantityPOUnit: parseFloat(lineItem.quantity)
+                        poQuantityUnit: "PC",//lineItem.unitOfMeasure,
+                        quantityPOUnit: parseFloat(lineItem.quantity),
+                        taxCode:"P0"
                     }));
                     req.data.mode = 'pdf';
-                    await threeWayMatch(req);
-                    if (req.data.statusFlag === 'S') {
-                        await postInvoice(req);
-                    }
+                    // await threeWayMatch(req);
+                    // if (req.data.statusFlag === 'S') {
+                    await postInvoice(req);
+                    // }
 
                 }
             } else {
                 req.data.mode = 'manual'
-                await threeWayMatch(req);
-                if (req.data.statusFlag === 'S') {
-                    await postInvoice(req);
-                }
+                // await threeWayMatch(req);
+                // if (req.data.statusFlag === 'S') {
+                await postInvoice(req);
+                // }
             }
         });
 
@@ -547,26 +496,21 @@ class InvCatalogService extends cds.ApplicationService {
                 const payload = {
                     FiscalYear: fiscalYear,
                     CompanyCode: companyCode,
-                    DocumentDate: `/Date(${new Date(documentDate).getTime()})/`,
-                    PostingDate: `/Date(${new Date(postingDate).getTime()})/`,
-                    CreationDate: `/Date(${Date.now()})/`, // Current timestamp
+                    DocumentDate: `/Date(${Date.now()})/`,//`/Date(${new Date(documentDate).getTime()})/`,
+                    PostingDate: `/Date(${Date.now()})/`,//`/Date(${new Date(postingDate).getTime()})/`,
+                    // CreationDate: `/Date(${Date.now()})/`, // Current timestamp
                     SupplierInvoiceIDByInvcgParty: supInvParty,
                     DocumentCurrency: documentCurrency_code,
-                    InvoiceGrossAmount: invGrossAmount,//.toString(),
+                    InvoiceGrossAmount: invGrossAmount.toString(),
                     to_SuplrInvcItemPurOrdRef: to_InvoiceItem.map(item => ({
-                        SupplierInvoice: item.supplierInvoice,
-                        FiscalYear: item.fiscalYear || fiscalYear,
                         SupplierInvoiceItem: item.sup_InvoiceItem,
                         PurchaseOrder: item.purchaseOrder,
                         PurchaseOrderItem: item.purchaseOrderItem,
-                        ReferenceDocument: item.referenceDocument,
-                        ReferenceDocumentFiscalYear: item.refDocFiscalYear,
-                        ReferenceDocumentItem: item.refDocItem,
                         TaxCode: item.taxCode,
                         DocumentCurrency: item.documentCurrency_code || documentCurrency_code,
-                        SupplierInvoiceItemAmount: item.supInvItemAmount,//.toString(),
+                        SupplierInvoiceItemAmount: item.supInvItemAmount.toString(),
                         PurchaseOrderQuantityUnit: item.poQuantityUnit,
-                        QuantityInPurchaseOrderUnit: item.quantityPOUnit,//.toString(),
+                        QuantityInPurchaseOrderUnit: item.quantityPOUnit.toString(),
                     })),
                 };
                 // Post the payload to the destination
