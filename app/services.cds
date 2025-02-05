@@ -7,3 +7,5 @@ using from './zcurrencies/annotations';
 using from './zinvoicestatusvalues/annotations';
 
 using from './zmaterial/annotations';
+
+using from './zproductmaster/annotations';

@@ -47,7 +47,8 @@
     "watch-zinvoicesmain": "cds watch --open zinvoicesmain/webapp/index.html?sap-ui-xx-viewCache=false",
     "hybrid": "cds watch --profile hybrid",
     "kill": "lsof -i :4004 | grep LISTEN | awk '{print $2}' | xargs kill -9 || echo 'No process running on port 4004'",
-    "watch-zmaterial": "cds watch --open zmaterial/webapp/index.html?sap-ui-xx-viewCache=false"
+    "watch-zmaterial": "cds watch --open zmaterial/webapp/index.html?sap-ui-xx-viewCache=false",
+    "watch-zproductmaster": "cds watch --open zproductmaster/webapp/index.html?sap-ui-xx-viewCache=false"
   },
   "cds": {
     "requires": {
@@ -110,25 +111,23 @@
           "path": "/sap/opu/odata/sap/API_MATERIAL_DOCUMENT_SRV"
         }
       },
-      "API_SUPPLIERINVOICE_PROCESS_SRV": {
+      "API_PRODUCT_SRV": {
         "kind": "odata-v2",
         "csrf": true,
         "csrfInBatch": true,
-        "model": "srv/external/API_SUPPLIERINVOICE_PROCESS_SRV",
+        "model": "srv/external/API_PRODUCT_SRV",
         "credentials": {
           "destination": "S4Public",
-          "path": "/sap/opu/odata/sap/API_SUPPLIERINVOICE_PROCESS_SRV"
+          "path": "/sap/opu/odata/sap/API_PRODUCT_SRV"
         }
       }
     }
   },
   "sapux": [
     "app/zinvoicesmain",
-    "app/zinvoicesstatusvalues",
-    "app/zinvoicescurrencies",
-    "app/zinvoicestatusvalues",
     "app/zcurrencies",
     "app/zinvoicestatusvalues",
-    "app/zmaterial"
+    "app/zmaterial",
+    "app/zproductmaster"
   ]
 }

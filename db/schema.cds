@@ -88,3 +88,34 @@ aspect MaterialItemEntity : cuid, managed {
   EntryUnit               : String(2);
   QuantityInEntryUnit     : String(6);
 }
+
+
+entity ProductEntity : cuid, managed, {
+  documentId        : Integer;
+  Product           : String(4);
+  ProductType       : String(4);
+  GrossWeight       : Decimal(13, 3);
+  WeightUnit        : String(2);
+  NetWeight         : Decimal(13, 3);
+  ProductGroup      : String(4);
+  BaseUnit          : String(2);
+  ItemCategoryGroup : String(4);
+  IndustrySector    : String(2);
+  status            : String(200);
+  statusFlag        : String(1);
+  statusColor       : Association to one StatusValues
+                        on statusColor.code = statusFlag;
+  to_ProductItem    : Composition of many ProductItemEntity;
+}
+
+aspect ProductItemEntity : cuid, managed {
+  Product                  : String(4);
+  Plant                    : String(4);
+  AvailabilityCheckType    : String(2);
+  PeriodType               : String(2);
+  ProfitCenter             : String(5);
+  MaintenanceStatusName    : String(2);
+  FiscalYearCurrentPeriod  : String(4);
+  FiscalMonthCurrentPeriod : String(2);
+  BaseUnit                 : String(2);
+}

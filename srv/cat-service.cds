@@ -2,6 +2,7 @@ using zsupplier as persistence from '../db/schema';
 using {sap.common as common} from '../db/common';
 using {CE_PURCHASEORDER_0001 as po} from './external/CE_PURCHASEORDER_0001';
 using {API_MATERIAL_DOCUMENT_SRV as gr} from './external/API_MATERIAL_DOCUMENT_SRV';
+using {API_PRODUCT_SRV as pr} from './external/API_PRODUCT_SRV';
 using {Attachments} from '@cap-js/sdm';
 
 service InvCatalogService @(requires: 'authenticated-user') {
@@ -44,6 +45,24 @@ service InvCatalogService @(requires: 'authenticated-user') {
         @description: 'Attachments Composition'
         attachments : Composition of many Attachments;
     };
+
+    entity Product                  as projection on persistence.ProductEntity
+        actions {
+            @(Common.SideEffects.TargetEntities: ['/InvCatalogService.EntityContainer/Product'])
+            action copyProduct(in : $self) returns Product;
+        };
+
+    entity ProductItem              as projection on persistence.ProductEntity.to_ProductItem;
+
+    extend persistence.ProductEntity with {
+        @description: 'Attachments Composition'
+        attachments : Composition of many Attachments;
+    };
+
+    entity A_Product                as
+        projection on pr.A_Product {
+            *
+        };
 
     entity A_MaterialDocumentHeader as
         projection on gr.A_MaterialDocumentHeader {

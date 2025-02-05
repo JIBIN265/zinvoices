@@ -117,6 +117,10 @@ modules:
       - zmaterial.zip
       name: zmaterial
       target-path: resources/
+    - artifacts:
+      - zproductmaster.zip
+      name: zproductmaster
+      target-path: resources/
 - name: zinvoicesmain
   type: html5
   path: app/zinvoicesmain
@@ -150,6 +154,16 @@ modules:
 - name: zmaterial
   type: html5
   path: app/zmaterial
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: zproductmaster
+  type: html5
+  path: app/zproductmaster
   build-parameters:
     build-result: dist
     builder: custom
