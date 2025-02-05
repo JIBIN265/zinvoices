@@ -236,10 +236,11 @@ class InvCatalogService extends cds.ApplicationService {
                     });
 
                     // Populate req.data.Invoice with mapped values
+                    const today = new Date();
                     req.data.fiscalYear = new Date(headerFields.documentDate).getFullYear().toString();
                     req.data.documentCurrency_code = headerFields.currencyCode;
-                    // req.data.documentDate = `/Date(${Date.now()})/`;
-                    // req.data.postingDate = `/Date(${Date.now()})/`;
+                    req.data.documentDate = today.toISOString().split('T')[0];//`/Date(${Date.now()})/`;
+                    req.data.postingDate = today.toISOString().split('T')[0];//`/Date(${Date.now()})/`;
                     req.data.supInvParty = 'SI4849'//headerFields.senderName.substring(0, 10); // Truncate if necessary
                     req.data.invGrossAmount = parseFloat(headerFields.grossAmount);
                     req.data.companyCode = "2910";
@@ -516,6 +517,7 @@ class InvCatalogService extends cds.ApplicationService {
                 // Post the payload to the destination
                 const response = await invoiceDest.post('/A_SupplierInvoice', payload);
                 req.data.newInvoice = response.SupplierInvoice;
+                req.data.statusFlag = 'S';
                 return req;
             } catch (error) {
                 console.error('Error while posting invoice:', error.message);
