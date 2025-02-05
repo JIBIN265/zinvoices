@@ -252,7 +252,10 @@
                     "enableExport": true,
                     "widthIncludingColumnHeader": true,
                     "type": "GridTable",
-                    "condensedTableLayout": true
+                    "condensedTableLayout": true,
+                    "creationMode": {
+                      "name": "InlineCreationRows"
+                    }
                   }
                 }
               }
