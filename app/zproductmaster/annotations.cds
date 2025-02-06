@@ -129,7 +129,7 @@ annotate service.Product with @(
         {
             $Type : 'UI.DataFieldForAction',
             Action : 'InvCatalogService.copyProduct',
-            Label : 'copyProduct',
+            Label : '{i18n>copy}',
         },
     ],
     UI.HeaderInfo : {

@@ -120,6 +120,16 @@
           "destination": "S4Public",
           "path": "/sap/opu/odata/sap/API_PRODUCT_SRV"
         }
+      },
+      "API_SUPPLIERINVOICE_PROCESS_SRV": {
+        "kind": "odata-v2",
+        "csrf": true,
+        "csrfInBatch": true,
+        "model": "srv/external/API_SUPPLIERINVOICE_PROCESS_SRV",
+        "credentials": {
+          "destination": "S4Public",
+          "path": "/sap/opu/odata/sap/API_SUPPLIERINVOICE_PROCESS_SRV"
+        }
       }
     }
   },

@@ -62,7 +62,8 @@
       "libs": {
         "sap.m": {},
         "sap.ui.core": {},
-        "sap.fe.templates": {}
+        "sap.fe.templates": {},
+        "sap.f": {}
       }
     },
     "contentDensities": {
@@ -94,17 +95,28 @@
       "css": []
     },
     "routing": {
-      "config": {},
+      "config": {
+        "flexibleColumnLayout": {
+          "defaultTwoColumnLayoutType": "TwoColumnsMidExpanded",
+          "defaultThreeColumnLayoutType": "ThreeColumnsMidExpanded"
+        },
+        "routerClass": "sap.f.routing.Router"
+      },
       "routes": [
         {
           "pattern": ":?query:",
           "name": "ProductList",
-          "target": "ProductList"
+          "target": [
+            "ProductList"
+          ]
         },
         {
           "pattern": "Product({key}):?query:",
           "name": "ProductObjectPage",
-          "target": "ProductObjectPage"
+          "target": [
+            "ProductList",
+            "ProductObjectPage"
+          ]
         }
       ],
       "targets": {
@@ -132,7 +144,9 @@
               },
               "initialLoad": "Enabled"
             }
-          }
+          },
+          "controlAggregation": "beginColumnPages",
+          "contextPattern": ""
         },
         "ProductObjectPage": {
           "type": "Component",
@@ -142,11 +156,35 @@
             "settings": {
               "editableHeaderContent": false,
               "contextPath": "/Product",
-              "navigation": {}
+              "navigation": {},
+              "controlConfiguration": {
+                "to_ProductItem/@com.sap.vocabularies.UI.v1.LineItem#i18nPlantDetails": {
+                  "columns": {
+                    "DataField::Plant": {
+                      "widthIncludingColumnHeader": true
+                    }
+                  },
+                  "tableSettings": {
+                    "type": "GridTable",
+                    "widthIncludingColumnHeader": true,
+                    "creationMode": {
+                      "name": "InlineCreationRows"
+                    }
+                  }
+                }
+              }
             }
-          }
+          },
+          "controlAggregation": "midColumnPages",
+          "contextPattern": "/Product({key})"
         }
       }
+    },
+    "rootView": {
+      "viewName": "sap.fe.templates.RootContainer.view.Fcl",
+      "type": "XML",
+      "async": true,
+      "id": "appRootView"
     }
   },
   "sap.fiori": {
