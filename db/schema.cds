@@ -90,22 +90,25 @@ aspect MaterialItemEntity : cuid, managed {
 }
 
 
-entity ProductEntity : cuid, managed, {
-  documentId        : Integer;
-  Product           : String(4);
-  ProductType       : String(4);
-  GrossWeight       : Decimal(13, 3);
-  WeightUnit        : String(2);
-  NetWeight         : Decimal(13, 3);
-  ProductGroup      : String(4);
-  BaseUnit          : String(2);
-  ItemCategoryGroup : String(4);
-  IndustrySector    : String(2);
-  status            : String(200);
-  statusFlag        : String(1);
-  statusColor       : Association to one StatusValues
-                        on statusColor.code = statusFlag;
-  to_ProductItem    : Composition of many ProductItemEntity;
+entity ProductEntity : cuid, managed {
+  documentId            : Integer;
+  Product               : String(4);
+  ProductType           : String(4);
+  GrossWeight           : Decimal(13, 3);
+  WeightUnit            : String(2);
+  NetWeight             : Decimal(13, 3);
+  ProductGroup          : String(4);
+  BaseUnit              : String(2);
+  ItemCategoryGroup     : String(4);
+  IndustrySector        : String(2);
+  status                : String(200);
+  statusFlag            : String(1);
+  statusColor           : Association to one StatusValues
+                            on statusColor.code = statusFlag;
+  to_ProductItem        : Composition of many ProductItemEntity;
+  to_SalesDelivery      : Composition of many ProductSalesDeliveryEntity;
+  to_ProductSalesTax    : Composition of many ProductSalesTaxEntity;
+  to_ProductProcurement : Composition of one ProductProcurementEntity;
 }
 
 aspect ProductItemEntity : cuid, managed {
@@ -118,4 +121,31 @@ aspect ProductItemEntity : cuid, managed {
   FiscalYearCurrentPeriod  : String(4);
   FiscalMonthCurrentPeriod : String(2);
   BaseUnit                 : String(2);
+}
+
+aspect ProductSalesDeliveryEntity : cuid, managed {
+  Product                        : String(4);
+  ProductSalesOrg                : String(4);
+  ProductDistributionChnl        : String(2);
+  MinimumOrderQuantity           : Decimal(13, 3);
+  SupplyingPlant                 : String(4);
+  PriceSpecificationProductGroup : String(4);
+  AccountDetnProductGroup        : String(4);
+  DeliveryNoteProcMinDelivQty    : Decimal(13, 3);
+  ItemCategoryGroup              : String(4);
+  BaseUnit                       : String(2);
+}
+
+aspect ProductSalesTaxEntity : cuid, managed {
+  Product           : String(4);
+  Country           : String(2);
+  TaxCategory       : String(4);
+  TaxClassification : String(1);
+}
+
+aspect ProductProcurementEntity : cuid, managed {
+  Product                   : String(4);
+  PurchaseOrderQuantityUnit : String(4);
+  VarblPurOrdUnitStatus     : String(1);
+  PurchasingAcknProfile     : String(4);
 }

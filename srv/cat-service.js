@@ -91,10 +91,8 @@ class InvCatalogService extends cds.ApplicationService {
         });
 
         this.before("SAVE", Product, async (req) => {
-
             try {
-
-                //     // Prepare the payload
+                // Prepare the payload
                 const payload = {
                     Product: req.data.Product,
                     ProductType: req.data.ProductType,
@@ -105,6 +103,8 @@ class InvCatalogService extends cds.ApplicationService {
                     BaseUnit: req.data.BaseUnit,
                     ItemCategoryGroup: req.data.ItemCategoryGroup,
                     IndustrySector: req.data.IndustrySector,
+
+                    // Plant Data
                     to_Plant: {
                         results: req.data.to_Plant?.results?.map(item => ({
                             Product: req.data.Product,
@@ -117,12 +117,47 @@ class InvCatalogService extends cds.ApplicationService {
                             FiscalMonthCurrentPeriod: item.FiscalMonthCurrentPeriod,
                             BaseUnit: item.BaseUnit,
                         })) || []
+                    },
+
+                    // Sales & Delivery Data
+                    to_SalesDelivery: {
+                        results: req.data.to_SalesDelivery?.results?.map(item => ({
+                            Product: req.data.Product,
+                            ProductSalesOrg: item.ProductSalesOrg,
+                            ProductDistributionChnl: item.ProductDistributionChnl,
+                            MinimumOrderQuantity: item.MinimumOrderQuantity,
+                            SupplyingPlant: item.SupplyingPlant,
+                            PriceSpecificationProductGroup: item.PriceSpecificationProductGroup,
+                            AccountDetnProductGroup: item.AccountDetnProductGroup,
+                            DeliveryNoteProcMinDelivQty: item.DeliveryNoteProcMinDelivQty,
+                            ItemCategoryGroup: item.ItemCategoryGroup,
+                            BaseUnit: item.BaseUnit,
+                        })) || []
+                    },
+
+                    // Product Sales Tax Data
+                    to_ProductSalesTax: {
+                        results: req.data.to_ProductSalesTax?.results?.map(item => ({
+                            Product: req.data.Product,
+                            Country: item.Country,
+                            TaxCategory: item.TaxCategory,
+                            TaxClassification: item.TaxClassification,
+                        })) || []
+                    },
+
+                    // Product Procurement Data (Single Entity)
+                    to_ProductProcurement: {
+                        Product: req.data.Product,
+                        PurchaseOrderQuantityUnit: req.data.to_ProductProcurement?.PurchaseOrderQuantityUnit || "",
+                        VarblPurOrdUnitStatus: req.data.to_ProductProcurement?.VarblPurOrdUnitStatus || "",
+                        PurchasingAcknProfile: req.data.to_ProductProcurement?.PurchasingAcknProfile || ""
                     }
                 };
-                //     // Post the payload to the destination
+
+                // Post the payload to the destination
                 const response = await prs.post('/A_Product', payload);
-                req.data.status = 'Product Created'
-                //     return req;
+                req.data.status = 'Product Created';
+
             } catch (error) {
                 console.error('Error while posting Product:', error.message);
                 req.data.statusFlag = 'E';
@@ -472,6 +507,135 @@ class InvCatalogService extends cds.ApplicationService {
             }
 
         });
+
+
+        this.on('copyProduct', async (req) => {
+            const { ID } = req.params[0];
+            const originalProduct = await db.run(
+                SELECT.one.from(Product)
+                    .columns(inv => {
+                        inv`*`,                   // Select all columns from Product
+                            inv.to_ProductItem(int => { int`*` }) // Select all columns from Product Item
+                    })
+                    .where({ ID: ID })
+            );
+
+            if (!originalProduct) {
+                const draftProduct = await db.run(
+                    SELECT.one.from(Product.drafts)
+                        .columns(inv => {
+                            inv`*`,                   // Select all columns from Product
+                                inv.to_ProductItem(int => { int`*` }) // Select all columns from Product Item
+                        })
+                        .where({ ID: ID })
+                );
+                if (draftProduct) {
+                    req.error(404, 'You cannot copy a Draft Order');
+                }
+                else {
+                    req.error(404, 'Please contact SAP IT');
+                }
+                if (req.errors) { req.reject(); }
+            }
+
+            const copiedProduct = Object.assign({}, originalProduct);
+            delete copiedProduct.ID;  // Remove the ID to ensure a new entity is created
+            delete copiedProduct.createdAt;
+            delete copiedProduct.createdBy;
+            delete copiedProduct.modifiedAt;
+            delete copiedProduct.modifiedBy;
+            delete copiedProduct.HasActiveEntity;
+            delete copiedProduct.HasDraftEntity;
+            delete copiedProduct.IsActiveEntity;
+            delete copiedProduct.Product;
+            copiedProduct.DraftAdministrativeData_DraftUUID = cds.utils.uuid();
+            // Ensure all related entities are copied
+            if (originalProduct.to_ProductItem) {
+                copiedProduct.to_ProductItem = originalProduct.to_ProductItem.map(ProductItem => {
+                    const copiedProductItem = Object.assign({}, ProductItem);
+                    delete copiedProductItem.ID; // Remove the ID to create a new related entity
+                    delete copiedProductItem.up__ID;
+                    delete copiedProductItem.createdAt;
+                    delete copiedProductItem.createdBy;
+                    delete copiedProductItem.modifiedAt;
+                    delete copiedProductItem.modifiedBy;
+                    delete copiedProductItem.Product;
+                    copiedProductItem.DraftAdministrativeData_DraftUUID = cds.utils.uuid();
+                    return copiedProductItem;
+                });
+            }
+            if (originalProduct.to_SalesDelivery) {
+                copiedProduct.to_SalesDelivery = originalProduct.to_SalesDelivery.map(ProductItem => {
+                    const copiedProductItem = Object.assign({}, ProductItem);
+                    delete copiedProductItem.ID; // Remove the ID to create a new related entity
+                    delete copiedProductItem.up__ID;
+                    delete copiedProductItem.createdAt;
+                    delete copiedProductItem.createdBy;
+                    delete copiedProductItem.modifiedAt;
+                    delete copiedProductItem.modifiedBy;
+                    delete copiedProductItem.Product;
+                    copiedProductItem.DraftAdministrativeData_DraftUUID = cds.utils.uuid();
+                    return copiedProductItem;
+                });
+            }
+            if (originalProduct.to_ProductSalesTax) {
+                copiedProduct.to_ProductSalesTax = originalProduct.to_ProductSalesTax.map(ProductItem => {
+                    const copiedProductItem = Object.assign({}, ProductItem);
+                    delete copiedProductItem.ID; // Remove the ID to create a new related entity
+                    delete copiedProductItem.up__ID;
+                    delete copiedProductItem.createdAt;
+                    delete copiedProductItem.createdBy;
+                    delete copiedProductItem.modifiedAt;
+                    delete copiedProductItem.modifiedBy;
+                    delete copiedProductItem.Product;
+                    copiedProductItem.DraftAdministrativeData_DraftUUID = cds.utils.uuid();
+                    return copiedProductItem;
+                });
+            }
+            if (originalProduct.to_ProductSalesTax) {
+                copiedProduct.to_ProductSalesTax = originalProduct.to_ProductSalesTax.map(ProductItem => {
+                    const copiedProductItem = Object.assign({}, ProductItem);
+                    delete copiedProductItem.ID; // Remove the ID to create a new related entity
+                    delete copiedProductItem.up__ID;
+                    delete copiedProductItem.createdAt;
+                    delete copiedProductItem.createdBy;
+                    delete copiedProductItem.modifiedAt;
+                    delete copiedProductItem.modifiedBy;
+                    delete copiedProductItem.Product;
+                    copiedProductItem.DraftAdministrativeData_DraftUUID = cds.utils.uuid();
+                    return copiedProductItem;
+                });
+            }
+
+            if (originalProduct.to_ProductProcurement) {
+                copiedProduct.to_ProductProcurement = originalProduct.to_ProductProcurement.map(ProductItem => {
+                    const copiedProductItem = Object.assign({}, ProductItem);
+                    delete copiedProductItem.ID; // Remove the ID to create a new related entity
+                    delete copiedProductItem.up__ID;
+                    delete copiedProductItem.createdAt;
+                    delete copiedProductItem.createdBy;
+                    delete copiedProductItem.modifiedAt;
+                    delete copiedProductItem.modifiedBy;
+                    delete copiedProductItem.Product;
+                    copiedProductItem.DraftAdministrativeData_DraftUUID = cds.utils.uuid();
+                    return copiedProductItem;
+                });
+            }
+            //create a draft
+            const oProduct = await this.send({
+                query: INSERT.into(Product).entries(copiedProduct),
+                event: "NEW",
+            });
+
+            //return the draft
+            if (!oProduct) {
+                req.notify("Copy failed");
+            }
+            else {
+                req.notify("Order has been successfully copied and saved as a new draft.");
+            }
+
+        });
         async function streamToBuffer(stream) {
             return new Promise((resolve, reject) => {
                 const chunks = [];
@@ -650,6 +814,7 @@ class InvCatalogService extends cds.ApplicationService {
                 // Post the payload to the destination
                 const response = await invoiceDest.post('/A_SupplierInvoice', payload);
                 req.data.newInvoice = response.SupplierInvoice;
+                req.data.status = 'Supplier Invoice Posted';
                 req.data.statusFlag = 'S';
                 return req;
             } catch (error) {

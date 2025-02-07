@@ -26,12 +26,13 @@ service InvCatalogService @(requires: 'authenticated-user') {
             action copyInvoice(in : $self) returns Invoice;
         };
 
-    entity InvoiceItem              as projection on persistence.InvoiceEntity.to_InvoiceItem;
-
     extend persistence.InvoiceEntity with {
         @description: 'Attachments Composition'
         attachments : Composition of many Attachments;
     };
+
+    entity InvoiceItem              as projection on persistence.InvoiceEntity.to_InvoiceItem;
+
 
     entity Material                 as projection on persistence.MaterialEntity
         actions {
