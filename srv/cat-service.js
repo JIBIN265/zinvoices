@@ -514,11 +514,23 @@ class InvCatalogService extends cds.ApplicationService {
             const originalProduct = await db.run(
                 SELECT.one.from(Product)
                     .columns(inv => {
-                        inv`*`,                   // Select all columns from Product
-                            inv.to_ProductItem(int => { int`*` }) // Select all columns from Product Item
+                        inv`*`,  // Select all columns from Product
+                        
+                        // Select all columns from ProductItem
+                        inv.to_ProductItem(int => { int`*` }), 
+                        
+                        // Select all columns from SalesDelivery
+                        inv.to_SalesDelivery(sales => { sales`*` }),
+            
+                        // Select all columns from ProductSalesTax
+                        inv.to_ProductSalesTax(tax => { tax`*` }),
+            
+                        // Select all columns from ProductProcurement
+                        inv.to_ProductProcurement(proc => { proc`*` })
                     })
                     .where({ ID: ID })
             );
+            
 
             if (!originalProduct) {
                 const draftProduct = await db.run(

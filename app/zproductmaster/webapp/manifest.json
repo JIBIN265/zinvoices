@@ -164,6 +164,24 @@
                       "name": "InlineCreationRows"
                     }
                   }
+                },
+                "to_SalesDelivery/@com.sap.vocabularies.UI.v1.LineItem#SalesDeliveryDetails": {
+                  "tableSettings": {
+                    "type": "GridTable",
+                    "widthIncludingColumnHeader": true,
+                    "creationMode": {
+                      "name": "InlineCreationRows"
+                    }
+                  }
+                },
+                "to_ProductSalesTax/@com.sap.vocabularies.UI.v1.LineItem#i18nSalesTaxDetails": {
+                  "tableSettings": {
+                    "type": "GridTable",
+                    "widthIncludingColumnHeader": true,
+                    "creationMode": {
+                      "name": "InlineCreationRows"
+                    }
+                  }
                 }
               }
             }
