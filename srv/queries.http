@@ -3,11 +3,11 @@ Content-Type: application/json
 
 {
     "documentNumber": "5000000010",
-    "netAmount": "150.00",
+    "netAmount": "$ 150.00",
     "taxId": "12-5846832",
     "taxName": "Sales Tax:",
     "purchaseOrderNumber": "4500000001",
-    "grossAmount": "150.00",
+    "grossAmount": "$ 150.00",
     "currencyCode": "USD",
     "receiverContact": "Curtis V. Brown",
     "documentDate": "2022-10-10",

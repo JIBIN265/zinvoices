@@ -221,10 +221,10 @@ class InvCatalogService extends cds.ApplicationService {
 
                 let number = await documentId.getNextNumber();
                 req.data.documentId = number.toString();
-                await threeWayMatch(req);
-                if (req.data.statusFlag === 'S') {
+                // await threeWayMatch(req);
+                // if (req.data.statusFlag === 'S') {
                     await postInvoice(req);
-                }
+                // }
             }
             else if (!req.data.fiscalYear) {
 
@@ -366,6 +366,48 @@ class InvCatalogService extends cds.ApplicationService {
                 // }
             }
         });
+        
+        /**
+         * Function to retry document extraction in case of 429 Too Many Requests
+         */
+        async function sendWithRetry(form, maxRetries = 5, initialDelayMs = 2000) {
+            let attempts = 0;
+            let delayMs = initialDelayMs;
+        
+            while (attempts < maxRetries) {
+                try {
+                    const response = await this.DocumentExtraction_Dest.send({
+                        method: 'POST',
+                        path: '/',
+                        data: form,
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                            'Content-Length': form.getLengthSync()
+                        }
+                    });
+        
+                    return response; // Success, return the response
+                } catch (error) {
+                    attempts++;
+        
+                    // Check if the error is a 429 (Too Many Requests)
+                    if (error.response && error.response.status === 429) {
+                        console.warn(`429 Too Many Requests - Retrying in ${delayMs / 1000} seconds (Attempt ${attempts}/${maxRetries})`);
+                    } else {
+                        console.error(`Document extraction failed: ${error.message}`);
+                        throw error; // Stop retrying for non-429 errors
+                    }
+        
+                    if (attempts < maxRetries) {
+                        await new Promise(resolve => setTimeout(resolve, delayMs)); // Wait before retrying
+                        delayMs *= 2; // Exponential backoff (e.g., 2s, 4s, 8s, 16s...)
+                    } else {
+                        throw new Error(`Document extraction failed after ${maxRetries} retries.`);
+                    }
+                }
+            }
+        }
+        
 
         this.on('copyInvoice', async (req) => {
             const { ID } = req.params[0];
@@ -515,22 +557,22 @@ class InvCatalogService extends cds.ApplicationService {
                 SELECT.one.from(Product)
                     .columns(inv => {
                         inv`*`,  // Select all columns from Product
-                        
-                        // Select all columns from ProductItem
-                        inv.to_ProductItem(int => { int`*` }), 
-                        
-                        // Select all columns from SalesDelivery
-                        inv.to_SalesDelivery(sales => { sales`*` }),
-            
-                        // Select all columns from ProductSalesTax
-                        inv.to_ProductSalesTax(tax => { tax`*` }),
-            
-                        // Select all columns from ProductProcurement
-                        inv.to_ProductProcurement(proc => { proc`*` })
+
+                            // Select all columns from ProductItem
+                            inv.to_ProductItem(int => { int`*` }),
+
+                            // Select all columns from SalesDelivery
+                            inv.to_SalesDelivery(sales => { sales`*` }),
+
+                            // Select all columns from ProductSalesTax
+                            inv.to_ProductSalesTax(tax => { tax`*` }),
+
+                            // Select all columns from ProductProcurement
+                            inv.to_ProductProcurement(proc => { proc`*` })
                     })
                     .where({ ID: ID })
             );
-            
+
 
             if (!originalProduct) {
                 const draftProduct = await db.run(
@@ -839,70 +881,34 @@ class InvCatalogService extends cds.ApplicationService {
         }
 
         this.on('postInvoice', async (req) => {
-            // debugger
 
-            // // Step 1: Extract folder ID from request data
-            // const DocumentStore = await cds.connect.to('DocumentStore');
-            // const folderId = req.data.dmsFolder;
-            // if (!folderId) {
-            //     return req.error(400, "Folder ID is required.");
-            // }
+            const sanitizeNumber = (value) => {
+                if (typeof value === "string") {
+                    return parseFloat(value.replace(/[^0-9.]/g, "")) || 0;
+                }
+                return value;
+            };
 
-            // // Step 2: Define destination and DMS API details
-            // const dmsDestination = "sap_process_automation_document_store"; // The destination name configured in SAP BTP cockpit
-            // const folderUrl = `/browser/${folderId}`; // API endpoint for browsing folder content
-
-            // // Step 3: Fetch the documents in the folder using DMS API
-            // const dmsResponse = await cds.connect.to('DMSAPI').run({
-            //     method: "GET",
-            //     url: folderUrl,
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //     }
-            // });
-
-            // if (!dmsResponse || !dmsResponse.value || dmsResponse.value.length === 0) {
-            //     return req.error(404, `No documents found in the folder with ID ${folderId}`);
-            // }
-
-            // // Step 4: Extract document details
-            // const documents = dmsResponse.value;
-            // console.log("Retrieved Documents:", documents);
-
-            // // Example: Process the first document
-            // const firstDocument = documents[0];
-            // console.log("First Document Metadata:", firstDocument);
-
-            // // Step 5: Download the first document
-            // const downloadUrl = `/browser/${folderId}/${firstDocument.Id}/content`; // API endpoint for downloading the file
-            // const documentContent = await cds.connect.to('DMSAPI').run({
-            //     method: "GET",
-            //     url: downloadUrl,
-            //     responseType: "stream", // Adjust based on the content type
-            // });
-
-            // // Save the document content or process it further
-            // console.log("Document Content Retrieved:", documentContent);
+            const today = new Date();
 
             const newInvoice = {
                 data: {
                     fiscalYear: new Date(req.data.documentDate).getFullYear().toString(),
                     documentCurrency_code: req.data.currencyCode,
-                    documentDate: new Date(req.data.documentDate),
-                    postingDate: new Date(req.data.documentDate),
-                    supInvParty: req.data.senderName.substring(0, 10), // Truncate if necessary
-                    invGrossAmount: parseFloat(req.data.grossAmount),
-                    // comments: "Extracted from Email",
+                    documentDate: today.toISOString().split('T')[0],
+                    postingDate: today.toISOString().split('T')[0],
+                    supInvParty: 'SI4849', 
+                    invGrossAmount: parseFloat(sanitizeNumber(req.data.grossAmount)),
+                    companyCode: "2910", // Cleaned number
                     to_InvoiceItem: req.data.to_Item.map((lineItem, index) => ({
-                        supplierInvoice: req.data.documentNumber,
-                        fiscalYear: new Date(req.data.documentDate).getFullYear().toString(),
                         sup_InvoiceItem: (index + 1).toString().padStart(5, "0"),
                         purchaseOrder: req.data.purchaseOrderNumber,
-                        purchaseOrderItem: (index + 1).toString().padStart(5, "0"),
+                        purchaseOrderItem: (index + 10).toString().padStart(5, "0"),
                         documentCurrency_code: req.data.currencyCode,
-                        supInvItemAmount: parseFloat(lineItem.netAmount),
-                        poQuantityUnit: lineItem.unitOfMeasure,
-                        quantityPOUnit: parseFloat(lineItem.quantity)
+                        supInvItemAmount: parseFloat(sanitizeNumber(lineItem.netAmount)), // Cleaned number
+                        poQuantityUnit: "PC",//lineItem.unitOfMeasure,
+                        quantityPOUnit: parseFloat(sanitizeNumber(lineItem.quantity)),
+                        taxCode: "P0" // Cleaned number
                     })),
                     mode: 'email',
                     DraftAdministrativeData_DraftUUID: cds.utils.uuid(),
@@ -910,205 +916,14 @@ class InvCatalogService extends cds.ApplicationService {
                 }
             };
 
+
             const oInvoice = await this.send({
                 query: INSERT.into(Invoice).entries(newInvoice.data),
                 event: "NEW",
             });
 
-            // const dbUpdatePayload = {
-            //     DraftAdministrativeData_DraftUUID: oInvoice.DraftAdministrativeData_DraftUUID,
-            //     IsActiveEntity: true
-            // };
-
-
-            // await db.run(
-            //     UPDATE(Invoice.drafts)
-            //         .set(dbUpdatePayload)
-            //         .where({ ID: oInvoice.ID })
-            // );
-
-            // const entitySet = await db.run(
-            //     SELECT.one.from(Invoice.drafts)
-            //         .columns(cpx => {
-            //             cpx`*`,
-            //                 cpx.to_InvoiceItem(cfy => { cfy`*` })
-            //         })
-            //         .where({ ID: oInvoice.ID })
-            // );
-
-            // await INSERT(entitySet).into(Invoice);
-
-            // await DELETE(Invoice.drafts).where({
-            //     DraftAdministrativeData_DraftUUID: oInvoice.DraftAdministrativeData_DraftUUID,
-            // });
 
         });
-
-        // this.on('threewaymatch', 'Invoice', async req => {
-        //     try {
-        //         console.log("Three-way Verification Code Check");
-        //         const { ID } = req.params[0];
-        //         if (!ID) {
-        //             return req.error(400, "Invoice ID is required");
-        //         }
-
-        //         // Fetch invoice
-        //         const invoice = await db.run(SELECT.one.from(Invoice).where({ ID: ID }));
-        //         if (!invoice) {
-        //             return req.error(404, `Invoice with ID ${ID} not found`);
-        //         }
-
-        //         // Fetch invoice items
-        //         const invoiceItems = await db.run(SELECT.from(InvoiceItem).where({ up__ID: ID }));
-        //         if (!invoiceItems || invoiceItems.length === 0) {
-        //             return req.error(404, `No items found for Invoice ${ID}`);
-        //         }
-
-        //         let allItemsMatched = true;
-        //         let itemCounter = 1;
-        //         let allStatusReasons = [];
-        //         let result = {
-        //             FiscalYear: "",
-        //             CompanyCode: "",
-        //             DocumentDate: null,
-        //             PostingDate: null,
-        //             SupplierInvoiceIDByInvcgParty: "",
-        //             DocumentCurrency: "",
-        //             InvoiceGrossAmount: invoice.invGrossAmount.toString(),
-        //             status: "",
-        //             to_SuplrInvcItemPurOrdRef: []
-        //         };
-
-        //         for (const invoiceItem of invoiceItems) {
-        //             const { purchaseOrder, purchaseOrderItem, sup_InvoiceItem, quantityPOUnit, supInvItemAmount } = invoiceItem;
-
-        //             // Fetch PO details
-        //             const purchaseOrderData = await pos.run(SELECT.one.from(PurchaseOrder).where({ PurchaseOrder: purchaseOrder }));
-        //             if (!purchaseOrderData) {
-        //                 allItemsMatched = false;
-        //                 allStatusReasons.push(`Item ${sup_InvoiceItem}: Purchase Order not found`);
-        //                 continue;
-        //             }
-
-        //             const purchaseOrderItemData = await pos.run(SELECT.one.from(PurchaseOrderItem).where({ PurchaseOrder: purchaseOrder, PurchaseOrderItem: purchaseOrderItem }));
-        //             if (!purchaseOrderItemData) {
-        //                 allItemsMatched = false;
-        //                 allStatusReasons.push(`Item ${sup_InvoiceItem}: Purchase Order Item not found`);
-        //                 continue;
-        //             }
-
-        //             // Fetch GR details
-        //             const materialDocumentData = await grs.run(
-        //                 SELECT.one.from(A_MaterialDocumentHeader)
-        //                     .where({ ReferenceDocument: purchaseOrder })
-        //             );
-
-        //             let materialItemData;
-        //             if (materialDocumentData) {
-        //                 materialItemData = await grs.run(
-        //                     SELECT.one.from(A_MaterialDocumentItem)
-        //                         .where({
-        //                             MaterialDocument: materialDocumentData.MaterialDocument,
-        //                             MaterialDocumentYear: materialDocumentData.MaterialDocumentYear,
-        //                             PurchaseOrderItem: purchaseOrderItem
-        //                         })
-        //                 );
-        //             }
-
-        //             // Determine item status
-        //             let itemStatus = 'Matched';
-        //             let statusReasons = [];
-
-        //             // Convert quantityPOUnit from string to number
-        //             const quantityPOUnitNumber = Number(quantityPOUnit);
-
-        //             // Ensure supInvItemAmount and purchaseOrderItemData.NetPriceAmount are numbers
-        //             const supInvItemAmountNumber = Number(supInvItemAmount);
-        //             const netPriceAmountNumber = Number(purchaseOrderItemData.NetPriceAmount);
-
-        //             // Compare quantityPOUnit with purchaseOrderItemData.OrderQuantity
-        //             if (quantityPOUnitNumber !== purchaseOrderItemData.OrderQuantity) {
-        //                 itemStatus = 'Discrepancy';
-        //                 statusReasons.push('Quantity mismatch with PO');
-        //             }
-
-        //             // Compare supInvItemAmount with purchaseOrderItemData.NetPriceAmount
-        //             if (supInvItemAmountNumber !== netPriceAmountNumber) {
-        //                 itemStatus = 'Discrepancy';
-        //                 statusReasons.push('Amount mismatch with PO');
-        //             }
-
-        //             // Check if materialItemData exists and compare quantities
-        //             if (!materialItemData) {
-        //                 itemStatus = 'Discrepancy';
-        //                 statusReasons.push('No matching Goods Receipt found');
-        //             } else {
-        //                 const materialQuantityNumber = Number(materialItemData.QuantityInBaseUnit);
-        //                 if (quantityPOUnitNumber > materialQuantityNumber) {
-        //                     itemStatus = 'Discrepancy';
-        //                     statusReasons.push('Quantity mismatch with GR (Partial delivery)');
-        //                 }
-        //                 if (quantityPOUnitNumber < materialQuantityNumber) {
-        //                     itemStatus = 'Discrepancy';
-        //                     statusReasons.push('Quantity mismatch with GR (Over-delivery)');
-        //                 }
-        //             }
-
-        //             if (itemStatus !== 'Matched') {
-        //                 allItemsMatched = false;
-        //                 if (statusReasons.length > 0) {
-        //                     allStatusReasons.push(`Item ${purchaseOrderItem}: ${statusReasons.join(', ')}`);
-        //                 }
-        //             }
-
-        //             // Populate result object
-        //             result.FiscalYear = materialItemData ? materialItemData.ReferenceDocumentFiscalYear : "";
-        //             result.CompanyCode = purchaseOrderData.CompanyCode;
-        //             result.DocumentDate = materialDocumentData ? materialDocumentData.DocumentDate : null;
-        //             result.PostingDate = materialDocumentData ? materialDocumentData.PostingDate : null;
-        //             result.SupplierInvoiceIDByInvcgParty = purchaseOrderData.SupplierInvoiceIDByInvcgParty;
-        //             result.DocumentCurrency = purchaseOrderData.DocumentCurrency;
-        //             result.to_SuplrInvcItemPurOrdRef.push({
-        //                 SupplierInvoice: invoiceItem.supplierInvoice,
-        //                 FiscalYear: materialItemData ? materialItemData.ReferenceDocumentFiscalYear : "",
-        //                 SupplierInvoiceItem: itemCounter.toString(),
-        //                 PurchaseOrder: purchaseOrder,
-        //                 PurchaseOrderItem: purchaseOrderItem,
-        //                 ReferenceDocument: materialItemData ? materialItemData.MaterialDocument : "",
-        //                 ReferenceDocumentFiscalYear: materialItemData ? materialItemData.ReferenceDocumentFiscalYear : "",
-        //                 ReferenceDocumentItem: materialItemData ? materialItemData.MaterialDocumentItem : "",
-        //                 TaxCode: purchaseOrderItemData.TaxCode,
-        //                 DocumentCurrency: purchaseOrderItemData.DocumentCurrency,
-        //                 SupplierInvoiceItemAmount: supInvItemAmount.toString(),
-        //                 PurchaseOrderQuantityUnit: purchaseOrderItemData.PurchaseOrderQuantityUnit,
-        //                 QuantityInPurchaseOrderUnit: purchaseOrderItemData.OrderQuantity.toString(),
-        //             });
-
-        //             itemCounter += 1;
-        //         }
-
-        //         // Determine overall invoice status and update the database
-        //         const overallStatus = allItemsMatched ? 'Matched' : 'Discrepancy';
-        //         let statusWithReasons = overallStatus;
-        //         let failFlag = 'S';
-
-        //         if (overallStatus === 'Discrepancy') {
-        //             statusWithReasons += `: ${allStatusReasons.join('; ')}`;
-        //         }
-        //         const overallStatusFlag = failFlag ? 'E' : 'S';
-        //         await db.run(UPDATE(Invoice).set({ status: statusWithReasons, statusFlag: overallStatusFlag }).where({ ID: ID }));
-
-        //         // Set the status in the result object
-        //         result.status = statusWithReasons;
-
-        //         // Send response
-        //         return req.reply(result);
-
-        //     } catch (error) {
-        //         console.error("Unexpected error in ThreeWayMatch:", error);
-        //         return req.error(500, `Unexpected error: ${error.message}`);//COMMENT
-        //     }
-        // });
 
         return super.init();
     }
