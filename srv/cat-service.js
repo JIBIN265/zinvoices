@@ -2,13 +2,13 @@ const cds = require('@sap/cds');
 const SequenceHelper = require("./lib/SequenceHelper");
 const FormData = require('form-data');
 const { SELECT } = require('@sap/cds/lib/ql/cds-ql');
-const LOG = cds.log('cat-service.js')
-const axios = require("axios");
-const { S3Client, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const MAX_RETRIES = 30;
 const RETRY_DELAY_MS = 3000;
-const { retrieveJwt, getDestination } = require("@sap-cloud-sdk/connectivity");
-
+const { uuid } = cds.utils;
+const { Readable } = require("stream");
+const fs = require('fs');
+const path = require('path');
+const { executeHttpRequest } = require("@sap-cloud-sdk/http-client");
 
 class InvCatalogService extends cds.ApplicationService {
     async init() {
@@ -21,20 +21,18 @@ class InvCatalogService extends cds.ApplicationService {
             PurchaseOrder,
             PurchaseOrderItem,
             A_MaterialDocumentHeader,
-            A_MaterialDocumentItem,
-            attachments,
+            A_MaterialDocumentItem
         } = this.entities;
 
-        const [DocumentExtraction_Dest] = await Promise.all([
-            cds.connect.to('DocumentExtraction_Dest')
-        ]);
+        // const [DocumentExtraction_Dest] = await Promise.all([
+        //     cds.connect.to('DocumentExtraction_Dest')
+        // ]);
         const db = await cds.connect.to("db");
         const pos = await cds.connect.to('CE_PURCHASEORDER_0001');
         const grs = await cds.connect.to('API_MATERIAL_DOCUMENT_SRV');
         const invoiceDest = await cds.connect.to('API_SUPPLIERINVOICE_PROCESS_SRV');
         const prs = await cds.connect.to('API_PRODUCT_SRV');
-
-        this.DocumentExtraction_Dest = DocumentExtraction_Dest;
+        const DocumentExtraction_Dest = await cds.connect.to('DocumentExtraction_Dest');
 
         this.before("NEW", Invoice.drafts, async (req) => {
             // console.log(req.target.name)
@@ -90,83 +88,82 @@ class InvCatalogService extends cds.ApplicationService {
 
         });
 
-        this.before("SAVE", Product, async (req) => {
-            try {
-                // Prepare the payload
-                const payload = {
-                    Product: req.data.Product,
-                    ProductType: req.data.ProductType,
-                    GrossWeight: req.data.GrossWeight,
-                    WeightUnit: req.data.WeightUnit,
-                    NetWeight: req.data.NetWeight,
-                    ProductGroup: req.data.ProductGroup,
-                    BaseUnit: req.data.BaseUnit,
-                    ItemCategoryGroup: req.data.ItemCategoryGroup,
-                    IndustrySector: req.data.IndustrySector,
+        // this.before("SAVE", Product, async (req) => {
+        //     try {
+        //         // Prepare the payload
+        //         const payload = {
+        //             Product: req.data.Product,
+        //             ProductType: req.data.ProductType,
+        //             GrossWeight: req.data.GrossWeight,
+        //             WeightUnit: req.data.WeightUnit,
+        //             NetWeight: req.data.NetWeight,
+        //             ProductGroup: req.data.ProductGroup,
+        //             BaseUnit: req.data.BaseUnit,
+        //             ItemCategoryGroup: req.data.ItemCategoryGroup,
+        //             IndustrySector: req.data.IndustrySector,
 
-                    // Plant Data
-                    to_Plant: {
-                        results: req.data.to_Plant?.results?.map(item => ({
-                            Product: req.data.Product,
-                            Plant: item.Plant,
-                            AvailabilityCheckType: item.AvailabilityCheckType,
-                            PeriodType: item.PeriodType,
-                            ProfitCenter: item.ProfitCenter,
-                            MaintenanceStatusName: item.MaintenanceStatusName,
-                            FiscalYearCurrentPeriod: item.FiscalYearCurrentPeriod,
-                            FiscalMonthCurrentPeriod: item.FiscalMonthCurrentPeriod,
-                            BaseUnit: item.BaseUnit,
-                        })) || []
-                    },
+        //             // Plant Data
+        //             to_Plant: {
+        //                 results: req.data.to_Plant?.results?.map(item => ({
+        //                     Product: req.data.Product,
+        //                     Plant: item.Plant,
+        //                     AvailabilityCheckType: item.AvailabilityCheckType,
+        //                     PeriodType: item.PeriodType,
+        //                     ProfitCenter: item.ProfitCenter,
+        //                     MaintenanceStatusName: item.MaintenanceStatusName,
+        //                     FiscalYearCurrentPeriod: item.FiscalYearCurrentPeriod,
+        //                     FiscalMonthCurrentPeriod: item.FiscalMonthCurrentPeriod,
+        //                     BaseUnit: item.BaseUnit,
+        //                 })) || []
+        //             },
 
-                    // Sales & Delivery Data
-                    to_SalesDelivery: {
-                        results: req.data.to_SalesDelivery?.results?.map(item => ({
-                            Product: req.data.Product,
-                            ProductSalesOrg: item.ProductSalesOrg,
-                            ProductDistributionChnl: item.ProductDistributionChnl,
-                            MinimumOrderQuantity: item.MinimumOrderQuantity,
-                            SupplyingPlant: item.SupplyingPlant,
-                            PriceSpecificationProductGroup: item.PriceSpecificationProductGroup,
-                            AccountDetnProductGroup: item.AccountDetnProductGroup,
-                            DeliveryNoteProcMinDelivQty: item.DeliveryNoteProcMinDelivQty,
-                            ItemCategoryGroup: item.ItemCategoryGroup,
-                            BaseUnit: item.BaseUnit,
-                        })) || []
-                    },
+        //             // Sales & Delivery Data
+        //             to_SalesDelivery: {
+        //                 results: req.data.to_SalesDelivery?.results?.map(item => ({
+        //                     Product: req.data.Product,
+        //                     ProductSalesOrg: item.ProductSalesOrg,
+        //                     ProductDistributionChnl: item.ProductDistributionChnl,
+        //                     MinimumOrderQuantity: item.MinimumOrderQuantity,
+        //                     SupplyingPlant: item.SupplyingPlant,
+        //                     PriceSpecificationProductGroup: item.PriceSpecificationProductGroup,
+        //                     AccountDetnProductGroup: item.AccountDetnProductGroup,
+        //                     DeliveryNoteProcMinDelivQty: item.DeliveryNoteProcMinDelivQty,
+        //                     ItemCategoryGroup: item.ItemCategoryGroup,
+        //                     BaseUnit: item.BaseUnit,
+        //                 })) || []
+        //             },
 
-                    // Product Sales Tax Data
-                    to_ProductSalesTax: {
-                        results: req.data.to_ProductSalesTax?.results?.map(item => ({
-                            Product: req.data.Product,
-                            Country: item.Country,
-                            TaxCategory: item.TaxCategory,
-                            TaxClassification: item.TaxClassification,
-                        })) || []
-                    },
+        //             // Product Sales Tax Data
+        //             to_ProductSalesTax: {
+        //                 results: req.data.to_ProductSalesTax?.results?.map(item => ({
+        //                     Product: req.data.Product,
+        //                     Country: item.Country,
+        //                     TaxCategory: item.TaxCategory,
+        //                     TaxClassification: item.TaxClassification,
+        //                 })) || []
+        //             },
 
-                    // Product Procurement Data (Single Entity)
-                    to_ProductProcurement: {
-                        Product: req.data.Product,
-                        PurchaseOrderQuantityUnit: req.data.to_ProductProcurement?.PurchaseOrderQuantityUnit || "",
-                        VarblPurOrdUnitStatus: req.data.to_ProductProcurement?.VarblPurOrdUnitStatus || "",
-                        PurchasingAcknProfile: req.data.to_ProductProcurement?.PurchasingAcknProfile || ""
-                    }
-                };
+        //             // Product Procurement Data (Single Entity)
+        //             to_ProductProcurement: {
+        //                 Product: req.data.Product,
+        //                 PurchaseOrderQuantityUnit: req.data.to_ProductProcurement?.PurchaseOrderQuantityUnit || "",
+        //                 VarblPurOrdUnitStatus: req.data.to_ProductProcurement?.VarblPurOrdUnitStatus || "",
+        //                 PurchasingAcknProfile: req.data.to_ProductProcurement?.PurchasingAcknProfile || ""
+        //             }
+        //         };
 
-                // Post the payload to the destination
-                const response = await prs.post('/A_Product', payload);
-                req.data.status = 'Product Created';
+        //         // Post the payload to the destination
+        //         const response = await prs.post('/A_Product', payload);
+        //         req.data.status = 'Product Created';
 
-            } catch (error) {
-                console.error('Error while posting Product:', error.message);
-                req.data.statusFlag = 'E';
-                req.data.status = error.message;
-                req.errors(400, error.message);
-                if (req.errors) { req.reject(); }
-            }
-        });
-
+        //     } catch (error) {
+        //         console.error('Error while posting Product:', error.message);
+        //         req.data.statusFlag = 'E';
+        //         req.data.status = error.message;
+        //         req.errors(400, error.message);
+        //         if (req.errors) { req.reject(); }
+        //     }
+        // });
 
 
         this.before("SAVE", Material, async (req) => {
@@ -210,8 +207,80 @@ class InvCatalogService extends cds.ApplicationService {
             }
         });
 
+        this.after("SAVE", Invoice, async (req) => {
+            await db.run(
+                UPDATE('ZSUPPLIER_INVOICEENTITY_ATTACHMENTS')
+                    .set({ mimeType: 'application/pdf' })
+                    .where({ up__ID: req.ID, mimeType: "application/octet-stream" }))
+        });
+
         this.before("SAVE", Invoice, async (req) => {
+
             if (req.data.mode === 'email') {
+
+                //retrieve attachments
+
+                const dms = await cds.connect.to('DocumentStore');
+                const folderResponse = await dms.get(
+                    `/root?objectId=${req.data.dmsFolder}`
+                );
+
+                let attachments = [];
+                for (const obj of folderResponse.objects) {
+                    const objectId = obj.object.properties["cmis:objectId"].value;
+                    const mimeType = obj.object.properties["cmis:contentStreamMimeType"]?.value || "application/octet-stream";
+                    const filename = obj.object.properties["cmis:contentStreamFileName"]?.value || "unknown";
+                    ;
+
+                    const destination = { destinationName: 'sap_process_automation_document_store' }
+
+                    const url = `/root?cmisselector=content&objectId=${objectId}`;
+                    const getResponse = await executeHttpRequest(
+                        destination,
+                        {
+                            url,
+                            method: "GET",
+                            responseType: "arraybuffer",
+                        }
+                    );
+
+                    let fileBuffer;
+                    fileBuffer = Buffer.from(getResponse.data);
+
+                    if (fileBuffer) {
+
+                        attachments.push({
+                            content: fileBuffer,
+                            mimeType: mimeType,
+                            filename: filename,
+                            folderId: req.data.dmsFolder
+                        });
+
+                        // const extractionResults = await processFileBuffer(fileBuffer, req);
+                        // Creating form data
+                        const form = new FormData();
+                        form.append('file', fileBuffer, filename || 'file', mimeType || 'application/octet-stream');
+
+                        const options = {
+                            schemaName: 'SAP_invoice_schema',
+                            clientId: 'default',
+                            documentType: 'Invoice',
+                            receivedDate: new Date().toISOString().slice(0, 10),
+                            enrichment: {
+                                sender: { top: 5, type: "businessEntity", subtype: "supplier" },
+                                employee: { type: "employee" }
+                            }
+                        };
+                        form.append('options', JSON.stringify(options));
+
+                        const extractionResults = await processFileBuffer(form, req);
+                        debugger;
+
+                    }
+                }
+                req.data.attachments = attachments; // NEED TO INSERT INTO DRAFTS AND DELETE FROM CURRENT DMS LOCATION.
+                //
+
                 const documentId = new SequenceHelper({
                     db: db,
                     sequence: "ZSUPPLIER_DOCUMENT_ID",
@@ -221,10 +290,8 @@ class InvCatalogService extends cds.ApplicationService {
 
                 let number = await documentId.getNextNumber();
                 req.data.documentId = number.toString();
-                // await threeWayMatch(req);
-                // if (req.data.statusFlag === 'S') {
-                    await postInvoice(req);
-                // }
+
+
             }
             else if (!req.data.fiscalYear) {
 
@@ -248,135 +315,50 @@ class InvCatalogService extends cds.ApplicationService {
                 if (allRecords[0].attachments[0].content) {
                     try {
                         fileBuffer = await streamToBuffer(allRecords[0].attachments[0].content);
+
+                        // Creating form data
+                        const form = new FormData();
+                        form.append('file', fileBuffer, req.data.attachments[0].filename || 'file', req.data.attachments[0].mimeType || 'application/octet-stream');
+
+                        const options = {
+                            schemaName: 'SAP_invoice_schema',
+                            clientId: 'default',
+                            documentType: 'Invoice',
+                            receivedDate: new Date().toISOString().slice(0, 10),
+                            enrichment: {
+                                sender: { top: 5, type: "businessEntity", subtype: "supplier" },
+                                employee: { type: "employee" }
+                            }
+                        };
+                        form.append('options', JSON.stringify(options));
+
+                        const extractionResults = await processFileBuffer(form, req);
+                        debugger;
                     } catch (error) {
                         req.error(400, "Error converting stream to Base64");
                         if (req.errors) { req.reject(); }
                     }
 
-                    //creating form data
-                    const form = new FormData();
-                    try {
-                        form.append('file', fileBuffer, req.data.attachments[0].filename || 'file', req.data.attachments[0].mimeType || 'application/octet-stream');
-                    } catch (error) {
-                        const response = `Status update failed: ${error.message}`
-                        req.error(400, "Error converting stream to Base64",);
-                        if (req.errors) { req.reject(); }
-                    }
-                    const options = {
-                        schemaName: 'SAP_invoice_schema',
-                        clientId: 'default',
-                        documentType: 'Invoice',
-                        receivedDate: new Date().toISOString().slice(0, 10),
-                        enrichment: {
-                            sender: { top: 5, type: "businessEntity", subtype: "supplier" },
-                            employee: { type: "employee" }
-                        }
-                    };
-                    form.append('options', JSON.stringify(options));
-
-                    let status = '';
-                    let extractionResults;
-
-                    // Submit document for extraction with error handling
-                    try {
-                        const extractionResponse = await this.DocumentExtraction_Dest.send({
-                            method: 'POST',
-                            path: '/',
-                            data: form,
-                            headers: {
-                                'Content-Type': 'multipart/form-data',
-                                'Content-Length': form.getLengthSync()
-                            }
-                        });
-
-                        if (extractionResponse.status === 'PENDING') {
-                            // Poll for results
-                            let retries = 0;
-                            let jobDone = false;
-
-                            while (!jobDone && retries < MAX_RETRIES) {
-                                const jobStatus = await this.DocumentExtraction_Dest.get(`/${extractionResponse.id}`);
-                                console.log(`Attempt ${retries + 1}: Current job status is '${jobStatus.status}'`);
-
-                                if (jobStatus.status === "DONE") {
-                                    jobDone = true;
-                                    extractionResults = jobStatus.extraction;
-                                } else {
-                                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
-                                    retries++;
-                                }
-                            }
-
-                            if (!jobDone) {
-                                status = `Extraction failed after ${MAX_RETRIES} attempts`;
-                                await updateDraftOnly(req.data.Invoice.ID, status);
-                                return;
-                            }
-                        }
-                    } catch (error) {
-                        status = `Document extraction failed: ${error.message}`;
-                        await updateDraftOnly(req.data.Invoice.ID, status);
-                        return;
-                    }
-
-                    // Map extraction results
-                    const headerFields = extractionResults.headerFields.reduce((acc, field) => {
-                        acc[field.name] = field.value;
-                        return acc;
-                    }, {});
-
-                    const lineItems = extractionResults.lineItems.map(item => {
-                        return item.reduce((acc, field) => {
-                            acc[field.name] = field.value;
-                            return acc;
-                        }, {});
-                    });
-
-                    // Populate req.data.Invoice with mapped values
-                    const today = new Date();
-                    req.data.fiscalYear = new Date(headerFields.documentDate).getFullYear().toString();
-                    req.data.documentCurrency_code = headerFields.currencyCode;
-                    req.data.documentDate = today.toISOString().split('T')[0];//`/Date(${Date.now()})/`;
-                    req.data.postingDate = today.toISOString().split('T')[0];//`/Date(${Date.now()})/`;
-                    req.data.supInvParty = 'SI4849'//headerFields.senderName.substring(0, 10); // Truncate if necessary
-                    req.data.invGrossAmount = parseFloat(headerFields.grossAmount);
-                    req.data.companyCode = "2910";
-                    req.data.to_InvoiceItem = lineItems.map((lineItem, index) => ({
-                        sup_InvoiceItem: (index + 1).toString().padStart(5, "0"),
-                        purchaseOrder: headerFields.purchaseOrderNumber,
-                        purchaseOrderItem: (index + 10).toString().padStart(5, "0"),
-                        documentCurrency_code: headerFields.currencyCode,
-                        supInvItemAmount: parseFloat(lineItem.netAmount),
-                        poQuantityUnit: "PC",//lineItem.unitOfMeasure,
-                        quantityPOUnit: parseFloat(lineItem.quantity),
-                        taxCode: "P0"
-                    }));
-                    req.data.mode = 'pdf';
-                    // await threeWayMatch(req);
-                    // if (req.data.statusFlag === 'S') {
-                    await postInvoice(req);
-                    // }
-
                 }
             } else {
-                req.data.mode = 'manual'
+                req.data.mode = 'manual';
                 // await threeWayMatch(req);
                 // if (req.data.statusFlag === 'S') {
                 await postInvoice(req);
                 // }
             }
         });
-        
-        /**
-         * Function to retry document extraction in case of 429 Too Many Requests
-         */
-        async function sendWithRetry(form, maxRetries = 5, initialDelayMs = 2000) {
-            let attempts = 0;
-            let delayMs = initialDelayMs;
-        
-            while (attempts < maxRetries) {
+
+
+        async function processFileBuffer(form, req) {
+            try {
+
+                let status = '';
+                let extractionResults;
+
+                // Submit document for extraction with error handling
                 try {
-                    const response = await this.DocumentExtraction_Dest.send({
+                    const extractionResponse = await DocumentExtraction_Dest.send({
                         method: 'POST',
                         path: '/',
                         data: form,
@@ -385,11 +367,106 @@ class InvCatalogService extends cds.ApplicationService {
                             'Content-Length': form.getLengthSync()
                         }
                     });
-        
+
+                    if (extractionResponse.status === 'PENDING') {
+                        // Poll for results
+                        let retries = 0;
+                        let jobDone = false;
+
+                        while (!jobDone && retries < MAX_RETRIES) {
+                            const jobStatus = await DocumentExtraction_Dest.get(`/${extractionResponse.id}`);
+                            console.log(`Attempt ${retries + 1}: Current job status is '${jobStatus.status}'`);
+
+                            if (jobStatus.status === "DONE") {
+                                jobDone = true;
+                                extractionResults = jobStatus.extraction;
+                            } else {
+                                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+                                retries++;
+                            }
+                        }
+
+                        if (!jobDone) {
+                            status = `Extraction failed after ${MAX_RETRIES} attempts`;
+                            await updateDraftOnly(req.data.ID, status);
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    status = `Document extraction failed: ${error.message}`;
+                    await updateDraftOnly(req.data.ID, status);
+                    return;
+                }
+
+                // Map extraction results
+                const headerFields = extractionResults.headerFields.reduce((acc, field) => {
+                    acc[field.name] = field.value;
+                    return acc;
+                }, {});
+
+                const lineItems = extractionResults.lineItems.map(item => {
+                    return item.reduce((acc, field) => {
+                        acc[field.name] = field.value;
+                        return acc;
+                    }, {});
+                });
+
+                // Populate req.data.Invoice with mapped values
+                const today = new Date();
+                req.data.fiscalYear = new Date(headerFields.documentDate).getFullYear().toString();
+                req.data.documentCurrency_code = headerFields.currencyCode;
+                req.data.documentDate = today.toISOString().split('T')[0];
+                req.data.postingDate = today.toISOString().split('T')[0];
+                req.data.supInvParty = 'SI4849';
+                req.data.invGrossAmount = parseFloat(headerFields.grossAmount);
+                req.data.companyCode = "2910";
+                req.data.to_InvoiceItem = lineItems.map((lineItem, index) => ({
+                    sup_InvoiceItem: (index + 1).toString().padStart(5, "0"),
+                    purchaseOrder: headerFields.purchaseOrderNumber,
+                    purchaseOrderItem: (index + 10).toString().padStart(5, "0"),
+                    documentCurrency_code: headerFields.currencyCode,
+                    supInvItemAmount: parseFloat(lineItem.netAmount),
+                    poQuantityUnit: "PC",
+                    quantityPOUnit: parseFloat(lineItem.quantity),
+                    taxCode: "P0"
+                }));
+                req.data.mode = 'pdf';
+
+                // await threeWayMatch(req);
+                // if (req.data.statusFlag === 'S') {
+                await postInvoice(req);
+                // }
+            } catch (error) {
+                console.error("Error in processFileBuffer:", error);
+                req.error(400, "Error processing file buffer");
+                if (req.errors) { req.reject(); }
+            }
+        }
+
+
+        /**
+         * Function to retry document extraction in case of 429 Too Many Requests
+         */
+        async function sendWithRetry(form, maxRetries = 5, initialDelayMs = 2000) {
+            let attempts = 0;
+            let delayMs = initialDelayMs;
+
+            while (attempts < maxRetries) {
+                try {
+                    const response = await DocumentExtraction_Dest.send({
+                        method: 'POST',
+                        path: '/',
+                        data: form,
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                            'Content-Length': form.getLengthSync()
+                        }
+                    });
+
                     return response; // Success, return the response
                 } catch (error) {
                     attempts++;
-        
+
                     // Check if the error is a 429 (Too Many Requests)
                     if (error.response && error.response.status === 429) {
                         console.warn(`429 Too Many Requests - Retrying in ${delayMs / 1000} seconds (Attempt ${attempts}/${maxRetries})`);
@@ -397,7 +474,7 @@ class InvCatalogService extends cds.ApplicationService {
                         console.error(`Document extraction failed: ${error.message}`);
                         throw error; // Stop retrying for non-429 errors
                     }
-        
+
                     if (attempts < maxRetries) {
                         await new Promise(resolve => setTimeout(resolve, delayMs)); // Wait before retrying
                         delayMs *= 2; // Exponential backoff (e.g., 2s, 4s, 8s, 16s...)
@@ -407,7 +484,7 @@ class InvCatalogService extends cds.ApplicationService {
                 }
             }
         }
-        
+
 
         this.on('copyInvoice', async (req) => {
             const { ID } = req.params[0];
@@ -448,6 +525,7 @@ class InvCatalogService extends cds.ApplicationService {
             delete copiedInvoice.HasDraftEntity;
             delete copiedInvoice.IsActiveEntity;
             delete copiedInvoice.newInvoice;
+            delete copiedInvoice.mode
             copiedInvoice.DraftAdministrativeData_DraftUUID = cds.utils.uuid();
             // Ensure all related entities are copied
             if (originalInvoice.to_InvoiceItem) {
@@ -890,6 +968,7 @@ class InvCatalogService extends cds.ApplicationService {
             };
 
             const today = new Date();
+            const folderId = req.data.dmsFolder.replace('spa-res:cmis:folderid:', '');
 
             const newInvoice = {
                 data: {
@@ -897,9 +976,10 @@ class InvCatalogService extends cds.ApplicationService {
                     documentCurrency_code: req.data.currencyCode,
                     documentDate: today.toISOString().split('T')[0],
                     postingDate: today.toISOString().split('T')[0],
-                    supInvParty: 'SI4849', 
+                    supInvParty: 'SI4849',
                     invGrossAmount: parseFloat(sanitizeNumber(req.data.grossAmount)),
                     companyCode: "2910", // Cleaned number
+                    dmsFolder: folderId || '',
                     to_InvoiceItem: req.data.to_Item.map((lineItem, index) => ({
                         sup_InvoiceItem: (index + 1).toString().padStart(5, "0"),
                         purchaseOrder: req.data.purchaseOrderNumber,

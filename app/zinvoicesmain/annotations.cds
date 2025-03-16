@@ -1,5 +1,10 @@
 using InvCatalogService as service from '../../srv/cat-service';
 
+// annotate service.Invoice.attachments{
+//     mimeType 
+// }
+
+
 annotate service.Invoice with @(
     odata.draft.enabled,
     ![@UI.Criticality]                                    : statusColor.criticality,

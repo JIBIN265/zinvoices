@@ -3,30 +3,31 @@ Content-Type: application/json
 
 {
     "documentNumber": "5000000010",
-    "netAmount": "$ 150.00",
+    "netAmount": "$ 1600.00",
     "taxId": "12-5846832",
     "taxName": "Sales Tax:",
-    "purchaseOrderNumber": "4500000001",
-    "grossAmount": "$ 150.00",
-    "currencyCode": "USD",
+    "purchaseOrderNumber": "4500000011",
+    "grossAmount": "$ 1600.00",
+    "currencyCode": "CAD",
     "receiverContact": "Curtis V. Brown",
-    "documentDate": "2022-10-10",
-    "taxAmount": "0.00",
+    "documentDate": "2025-02-05",
+    "taxAmount": "$ 0.00",
     "taxRate": "0.0",
     "receiverName": "Standard Products",
-    "receiverAddress": "3150 SW 9th Street Miami, FL 3218 U.S.A.",
+    "receiverAddress": "3150 SW 9th Street Toronto, ON L5V 1X2 CANADA",
     "paymentTerms": "Due upon receipt",
-    "senderAddress": "3451 NE Willoughby Blvd. Sturt, FL 5494 U.S.A.",
+    "senderAddress": "3451 NE Willoughby Blvd. Sturt, ON LV5 1X2 CANADA",
     "senderName": "Alfreds Futterkiste",
-    "dmsFolder": "spa-res:cmis:folderid:4KeZ2vcVDiC-MklCMi0QI05RfnzdfJ91hOHL2YIsz_Y",
+    "dmsFolder": "spa-res:cmis:folderid:qdGxDlsaxJ6cJcBHxL_9pRyoYUQ5CLlvLMaoSQhPKwE",
     "to_Item": [
         {
             "description": "Professional Service",
-            "netAmount": "150.00",
+            "netAmount": "1600.00",
             "quantity": "100.00",
-            "unitPrice": "15.00",
+            "unitPrice": "16.00",
             "materialNumber": "2001",
             "unitOfMeasure": "PC"
         }
     ]
 }
+
