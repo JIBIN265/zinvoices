@@ -89,6 +89,7 @@ service InvCatalogService @(requires: 'authenticated-user') {
                        paymentTerms : String,
                        senderAddress : String,
                        senderName : String,
+                       senderMail : String,
                        dmsFolder : String,
                        to_Item : many {
         description : String;
@@ -98,8 +99,13 @@ service InvCatalogService @(requires: 'authenticated-user') {
         materialNumber : String;
         unitOfMeasure : String;
     }) returns {
+        documentId : String(10);
+        invoiceNo : String(10);
+        FiscalYear : String(4);
+        grossAmount : String;
         message : String;
-        indicator : String;
-        invoiceId : String;
+        indicator : String(1);
+        url : String;
+
     };
 }

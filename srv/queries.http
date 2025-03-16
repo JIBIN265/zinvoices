@@ -18,7 +18,8 @@ Content-Type: application/json
     "paymentTerms": "Due upon receipt",
     "senderAddress": "3451 NE Willoughby Blvd. Sturt, ON LV5 1X2 CANADA",
     "senderName": "Alfreds Futterkiste",
-    "dmsFolder": "spa-res:cmis:folderid:qdGxDlsaxJ6cJcBHxL_9pRyoYUQ5CLlvLMaoSQhPKwE",
+    "senderMail": "jibin.thomas@msitek.us",
+    "dmsFolder": "spa-res:cmis:folderid:uBmX8_KlDoeTkInod998-TXmdpicWRJiYb4tiymhOmw",
     "to_Item": [
         {
             "description": "Professional Service",

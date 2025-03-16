@@ -274,22 +274,11 @@ class InvCatalogService extends cds.ApplicationService {
                         form.append('options', JSON.stringify(options));
 
                         const extractionResults = await processFileBuffer(form, req);
-                        debugger;
 
                     }
                 }
                 req.data.attachments = attachments; // NEED TO INSERT INTO DRAFTS AND DELETE FROM CURRENT DMS LOCATION.
                 //
-
-                const documentId = new SequenceHelper({
-                    db: db,
-                    sequence: "ZSUPPLIER_DOCUMENT_ID",
-                    table: "zsupplier_InvoiceEntity",
-                    field: "documentId",
-                });
-
-                let number = await documentId.getNextNumber();
-                req.data.documentId = number.toString();
 
 
             }
@@ -333,7 +322,6 @@ class InvCatalogService extends cds.ApplicationService {
                         form.append('options', JSON.stringify(options));
 
                         const extractionResults = await processFileBuffer(form, req);
-                        debugger;
                     } catch (error) {
                         req.error(400, "Error converting stream to Base64");
                         if (req.errors) { req.reject(); }
@@ -967,29 +955,40 @@ class InvCatalogService extends cds.ApplicationService {
                 return value;
             };
 
-            const today = new Date();
+            const documentId = new SequenceHelper({
+                db: db,
+                sequence: "ZSUPPLIER_DOCUMENT_ID",
+                table: "zsupplier_InvoiceEntity",
+                field: "documentId",
+            });
+
+            let number = await documentId.getNextNumber();
+            // req.data.documentId = number.toString();
+
+            // const today = new Date();
             const folderId = req.data.dmsFolder.replace('spa-res:cmis:folderid:', '');
 
             const newInvoice = {
                 data: {
-                    fiscalYear: new Date(req.data.documentDate).getFullYear().toString(),
-                    documentCurrency_code: req.data.currencyCode,
-                    documentDate: today.toISOString().split('T')[0],
-                    postingDate: today.toISOString().split('T')[0],
-                    supInvParty: 'SI4849',
-                    invGrossAmount: parseFloat(sanitizeNumber(req.data.grossAmount)),
-                    companyCode: "2910", // Cleaned number
+                    // fiscalYear: new Date(req.data.documentDate).getFullYear().toString(),
+                    // documentCurrency_code: req.data.currencyCode,
+                    // documentDate: today.toISOString().split('T')[0],
+                    // postingDate: today.toISOString().split('T')[0],
+                    // supInvParty: 'SI4849',
+                    // invGrossAmount: parseFloat(sanitizeNumber(req.data.grossAmount)),
+                    // companyCode: "2910", // Cleaned number
+                    documentId: number.toString(),
                     dmsFolder: folderId || '',
-                    to_InvoiceItem: req.data.to_Item.map((lineItem, index) => ({
-                        sup_InvoiceItem: (index + 1).toString().padStart(5, "0"),
-                        purchaseOrder: req.data.purchaseOrderNumber,
-                        purchaseOrderItem: (index + 10).toString().padStart(5, "0"),
-                        documentCurrency_code: req.data.currencyCode,
-                        supInvItemAmount: parseFloat(sanitizeNumber(lineItem.netAmount)), // Cleaned number
-                        poQuantityUnit: "PC",//lineItem.unitOfMeasure,
-                        quantityPOUnit: parseFloat(sanitizeNumber(lineItem.quantity)),
-                        taxCode: "P0" // Cleaned number
-                    })),
+                    // to_InvoiceItem: req.data.to_Item.map((lineItem, index) => ({
+                    //     sup_InvoiceItem: (index + 1).toString().padStart(5, "0"),
+                    //     purchaseOrder: req.data.purchaseOrderNumber,
+                    //     purchaseOrderItem: (index + 10).toString().padStart(5, "0"),
+                    //     documentCurrency_code: req.data.currencyCode,
+                    //     supInvItemAmount: parseFloat(sanitizeNumber(lineItem.netAmount)), // Cleaned number
+                    //     poQuantityUnit: "PC",//lineItem.unitOfMeasure,
+                    //     quantityPOUnit: parseFloat(sanitizeNumber(lineItem.quantity)),
+                    //     taxCode: "P0" // Cleaned number
+                    // })),
                     mode: 'email',
                     DraftAdministrativeData_DraftUUID: cds.utils.uuid(),
                     IsActiveEntity: true
@@ -997,10 +996,34 @@ class InvCatalogService extends cds.ApplicationService {
             };
 
 
-            const oInvoice = await this.send({
-                query: INSERT.into(Invoice).entries(newInvoice.data),
-                event: "NEW",
-            });
+            try {
+                const oInvoice = await this.send({
+                    query: INSERT.into(Invoice).entries(newInvoice.data),
+                    event: "NEW",
+                });
+
+                const url = `https://yk2lt6xsylvfx4dz.launchpad.cfapps.us10.hana.ondemand.com/site/Kruger#ZinvoiceMain-manage?sap-ui-app-id-hint=saas_approuter_zinvoicesmain&/Invoice(ID=${oInvoice.ID},IsActiveEntity=true)?layout=TwoColumnsMidExpanded`;
+
+                return {
+                    documentId: oInvoice.documentId,
+                    invoiceNo: oInvoice.newInvoice,
+                    FiscalYear: oInvoice.fiscalYear,
+                    grossAmount: oInvoice.invGrossAmount,
+                    message: oInvoice.status,
+                    indicator: oInvoice.statusFlag,
+                    url: url
+                };
+            } catch (error) {
+                console.error("Error posting invoice:", error);
+                return {
+                    documentId: "",
+                    invoiceNo: "",
+                    FiscalYear: "",
+                    grossAmount: "",
+                    message: "Error posting invoice: " + error.message,
+                    indicator: "E"
+                };
+            }
 
 
         });
