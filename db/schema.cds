@@ -24,10 +24,12 @@ entity InvoiceEntity : cuid, managed, {
   statusFlag             : String(1);
   mode                   : String(10);
   dmsFolder              : String(50);
+  senderMail             : String(40);
   statusColor            : Association to one StatusValues
                              on statusColor.code = statusFlag;
   newInvoice             : String(10);
   to_InvoiceItem         : Composition of many InvoiceItemEntity;
+  to_InvoiceLogs         : Composition of many InvoiceLogs;
 }
 
 aspect InvoiceItemEntity : cuid, managed {
@@ -47,6 +49,11 @@ aspect InvoiceItemEntity : cuid, managed {
   Plant             : String(4);
   TaxJurisdiction   : String(4);
   ProductType       : String(4);
+}
+
+aspect InvoiceLogs : cuid, managed {
+  stepNo     : Integer;
+  logMessage : String(100);
 }
 
 entity StatusValues {

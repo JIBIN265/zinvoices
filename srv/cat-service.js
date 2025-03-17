@@ -15,6 +15,7 @@ class InvCatalogService extends cds.ApplicationService {
         const {
             Invoice,
             InvoiceItem,
+            InvoiceLogs,
             Material,
             MaterialItem,
             Product,
@@ -217,71 +218,106 @@ class InvCatalogService extends cds.ApplicationService {
 
             if (req.data.mode === 'email') {
 
+                let logincr = 1;
+                let logs = [];
+                logs.push({
+                    stepNo: logincr,
+                    logMessage: 'Recieved Attachments from Email: ' + req.data.senderMail,
+                });
+
+                logincr = logincr + 1;
+                logs.push({
+                    stepNo: logincr,
+                    logMessage: 'Added attachments to new Document ID:' + req.data.documentId,
+                });
+
+                logincr = logincr + 1;
+                logs.push({
+                    stepNo: logincr,
+                    logMessage: 'Attachment send for Document Extraction',
+                });
+
                 //retrieve attachments
 
                 const dms = await cds.connect.to('DocumentStore');
-                const folderResponse = await dms.get(
-                    `/root?objectId=${req.data.dmsFolder}`
-                );
-
-                let attachments = [];
-                for (const obj of folderResponse.objects) {
-                    const objectId = obj.object.properties["cmis:objectId"].value;
-                    const mimeType = obj.object.properties["cmis:contentStreamMimeType"]?.value || "application/octet-stream";
-                    const filename = obj.object.properties["cmis:contentStreamFileName"]?.value || "unknown";
-                    ;
-
-                    const destination = { destinationName: 'sap_process_automation_document_store' }
-
-                    const url = `/root?cmisselector=content&objectId=${objectId}`;
-                    const getResponse = await executeHttpRequest(
-                        destination,
-                        {
-                            url,
-                            method: "GET",
-                            responseType: "arraybuffer",
-                        }
+                try {
+                    const folderResponse = await dms.get(
+                        `/root?objectId=${req.data.dmsFolder}`
                     );
 
-                    let fileBuffer;
-                    fileBuffer = Buffer.from(getResponse.data);
+                    let attachments = [];
+                    for (const obj of folderResponse.objects) {
+                        const objectId = obj.object.properties["cmis:objectId"].value;
+                        const mimeType = obj.object.properties["cmis:contentStreamMimeType"]?.value || "application/octet-stream";
+                        const filename = obj.object.properties["cmis:contentStreamFileName"]?.value || "unknown";
+                        ;
 
-                    if (fileBuffer) {
+                        const destination = { destinationName: 'sap_process_automation_document_store' }
 
-                        attachments.push({
-                            content: fileBuffer,
-                            mimeType: mimeType,
-                            filename: filename,
-                            folderId: req.data.dmsFolder
-                        });
-
-                        // const extractionResults = await processFileBuffer(fileBuffer, req);
-                        // Creating form data
-                        const form = new FormData();
-                        form.append('file', fileBuffer, filename || 'file', mimeType || 'application/octet-stream');
-
-                        const options = {
-                            schemaName: 'SAP_invoice_schema',
-                            clientId: 'default',
-                            documentType: 'Invoice',
-                            receivedDate: new Date().toISOString().slice(0, 10),
-                            enrichment: {
-                                sender: { top: 5, type: "businessEntity", subtype: "supplier" },
-                                employee: { type: "employee" }
+                        const url = `/root?cmisselector=content&objectId=${objectId}`;
+                        const getResponse = await executeHttpRequest(
+                            destination,
+                            {
+                                url,
+                                method: "GET",
+                                responseType: "arraybuffer",
                             }
-                        };
-                        form.append('options', JSON.stringify(options));
+                        );
 
-                        const extractionResults = await processFileBuffer(form, req);
+                        let fileBuffer;
+                        fileBuffer = Buffer.from(getResponse.data);
 
+                        if (fileBuffer) {
+
+                            attachments.push({
+                                content: fileBuffer,
+                                mimeType: mimeType,
+                                filename: filename,
+                                folderId: req.data.dmsFolder
+                            });
+
+                            // const extractionResults = await processFileBuffer(fileBuffer, req);
+                            // Creating form data
+                            const form = new FormData();
+                            form.append('file', fileBuffer, filename || 'file', mimeType || 'application/octet-stream');
+
+                            const options = {
+                                schemaName: 'SAP_invoice_schema',
+                                clientId: 'default',
+                                documentType: 'Invoice',
+                                receivedDate: new Date().toISOString().slice(0, 10),
+                                enrichment: {
+                                    sender: { top: 5, type: "businessEntity", subtype: "supplier" },
+                                    employee: { type: "employee" }
+                                }
+                            };
+                            form.append('options', JSON.stringify(options));
+
+                            const extractionResults = await processFileBuffer(form, req, logincr, logs);
+
+                        }
                     }
+                    req.data.attachments = attachments; // NEED TO INSERT INTO DRAFTS AND DELETE FROM CURRENT DMS LOCATION.
+                    req.data.to_InvoiceLogs = logs;
+                    req.data.createdBy = req.data.senderMail;
+                    req.data.modifiedBy = req.data.senderMail;
+                    //
+                } catch (error) {
+                    console.error('Document extraction failed:', error.message);
+                    req.data.statusFlag = 'E';
+                    req.data.status = error.message;
+                    logincr = logincr + 1;
+                    logs.push({
+                        stepNo: logincr,
+                        logMessage: error.message,
+                    });
+                    req.data.to_InvoiceLogs = logs;
                 }
-                req.data.attachments = attachments; // NEED TO INSERT INTO DRAFTS AND DELETE FROM CURRENT DMS LOCATION.
-                //
-
 
             }
             else if (!req.data.fiscalYear) {
+
+                let logincr = 1;
 
                 const allRecords = await this.run(
                     SELECT.from(Invoice.drafts)
@@ -298,6 +334,8 @@ class InvCatalogService extends cds.ApplicationService {
                             ID: req.data.ID
                         })
                 );
+
+                req.data.mode = 'pdf';
 
                 let fileBuffer;
                 if (allRecords[0].attachments[0].content) {
@@ -320,7 +358,7 @@ class InvCatalogService extends cds.ApplicationService {
                         };
                         form.append('options', JSON.stringify(options));
 
-                        const extractionResults = await processFileBuffer(form, req);
+                        const extractionResults = await processFileBuffer(form, req, logincr);
                     } catch (error) {
                         console.error('Error converting stream to Base64:', error.message);
                         req.data.statusFlag = 'E';
@@ -339,7 +377,7 @@ class InvCatalogService extends cds.ApplicationService {
         });
 
 
-        async function processFileBuffer(form, req) {
+        async function processFileBuffer(form, req, logincr, logs) {
             try {
 
                 let status = '';
@@ -387,6 +425,11 @@ class InvCatalogService extends cds.ApplicationService {
                     console.error('Document extraction failed:', error.message);
                     req.data.statusFlag = 'E';
                     req.data.status = error.message;
+                    logincr = logincr + 1;
+                    logs.push({
+                        stepNo: logincr,
+                        logMessage: error.message,
+                    });
                     return;
                 }
 
@@ -402,6 +445,47 @@ class InvCatalogService extends cds.ApplicationService {
                         return acc;
                     }, {});
                 });
+
+                const headerConfidence = extractionResults.headerFields.reduce((acc, field) => {
+                    acc[field.name] = field.confidence;
+                    return acc;
+                }, {});
+
+                //Check Extraction Confidence.
+                if (headerConfidence.purchaseOrderNumber && headerConfidence.purchaseOrderNumber > 0.8) {
+                    logincr = logincr + 1;
+                    logs.push({
+                        stepNo: logincr,
+                        logMessage: 'Checked Extraction Confidence of Purchase Order Number fields',
+                    });
+                } else {
+                    logincr = logincr + 1;
+                    logs.push({
+                        stepNo: logincr,
+                        logMessage: 'Low confidence in Purchase Order Number extraction',
+                    });
+                    req.data.statusFlag = 'E';
+                    req.data.status = 'Low confidence in Purchase Order Number extraction';
+                    return
+                }
+
+                if (headerConfidence.grossAmount && headerConfidence.grossAmount > 0.8) {
+                    logincr = logincr + 1;
+                    logs.push({
+                        stepNo: logincr,
+                        logMessage: 'Checked Extraction Confidence of Gross Amount fields',
+                    });
+                } else {
+                    logincr = logincr + 1;
+                    logs.push({
+                        stepNo: logincr,
+                        logMessage: 'Low confidence in Gross Amount extraction',
+                    });
+
+                    req.data.statusFlag = 'E';
+                    req.data.status = 'Low confidence in Gross Amount extraction';
+                    return
+                }
 
                 // Populate req.data.Invoice with mapped values
                 const today = new Date();
@@ -422,16 +506,20 @@ class InvCatalogService extends cds.ApplicationService {
                     quantityPOUnit: parseFloat(lineItem.quantity),
                     taxCode: "P0"
                 }));
-                req.data.mode = 'pdf';
 
                 // await threeWayMatch(req);
                 // if (req.data.statusFlag === 'S') {
-                await postInvoice(req);
+                await postInvoice(req, logincr, logs);
                 // }
             } catch (error) {
                 console.error('Error processing file buffer:', error.message);
                 req.data.statusFlag = 'E';
                 req.data.status = error.message;
+                logincr = logincr + 1;
+                logs.push({
+                    stepNo: logincr,
+                    logMessage: error.message,
+                });
                 return;
             }
         }
@@ -933,7 +1021,7 @@ class InvCatalogService extends cds.ApplicationService {
         }
 
 
-        async function postInvoice(req) {
+        async function postInvoice(req, logincr, logs) {
             try {
                 const {
                     fiscalYear,
@@ -945,6 +1033,7 @@ class InvCatalogService extends cds.ApplicationService {
                     invGrossAmount,
                     to_InvoiceItem,
                 } = req.data;
+
 
                 // Prepare the payload
                 const payload = {
@@ -972,11 +1061,21 @@ class InvCatalogService extends cds.ApplicationService {
                 req.data.newInvoice = response.SupplierInvoice;
                 req.data.status = 'Supplier Invoice Posted';
                 req.data.statusFlag = 'S';
+                logincr = logincr + 1;
+                logs.push({
+                    stepNo: logincr,
+                    logMessage: 'Supplier Invoice Posted with Invoice No:' + response.SupplierInvoice,
+                });
                 return req;
             } catch (error) {
                 console.error('Error while posting invoice:', error.message);
                 req.data.statusFlag = 'E';
                 req.data.status = error.message;
+                logincr = logincr + 1;
+                logs.push({
+                    stepNo: logincr,
+                    logMessage: error.message,
+                });
                 return;
             }
         }
@@ -1012,6 +1111,7 @@ class InvCatalogService extends cds.ApplicationService {
                     // supInvParty: 'SI4849',
                     // invGrossAmount: parseFloat(sanitizeNumber(req.data.grossAmount)),
                     // companyCode: "2910", // Cleaned number
+                    senderMail: req.data.senderMail,
                     documentId: number.toString(),
                     dmsFolder: folderId || '',
                     // to_InvoiceItem: req.data.to_Item.map((lineItem, index) => ({

@@ -32,6 +32,7 @@ service InvCatalogService @(requires: 'authenticated-user') {
     };
 
     entity InvoiceItem              as projection on persistence.InvoiceEntity.to_InvoiceItem;
+    entity InvoiceLogs              as projection on persistence.InvoiceEntity.to_InvoiceLogs;
 
 
     entity Material                 as projection on persistence.MaterialEntity

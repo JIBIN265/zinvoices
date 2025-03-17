@@ -72,7 +72,7 @@ annotate service.Invoice with @(
         {
             $Type : 'UI.ReferenceFacet',
             ID    : 'GeneratedFacet1',
-            Label : 'General Information',
+            Label : '{i18n>GeneralInformation}',
             Target: '@UI.FieldGroup#GeneratedGroup',
         },
         {
@@ -81,13 +81,20 @@ annotate service.Invoice with @(
             ID    : 'ItemDetails',
             Target: 'to_InvoiceItem/@UI.LineItem#ItemDetails',
         },
+        {
+            $Type : 'UI.ReferenceFacet',
+            Label : '{i18n>InvoiceLogs}',
+            ID : 'i18nInvoiceLog',
+            Target : 'to_InvoiceLogs/@UI.SelectionPresentationVariant#i18nInvoiceLog',
+        },
     ],
     UI.LineItem                                 : [
         {
             $Type                : 'UI.DataField',
             Label                : '{i18n>DocumentId}',
             Value                : documentId,
-            ![@HTML5.CssDefaults]: {width: '7%', },
+            
+            ![@HTML5.CssDefaults]: {width: '150px', },
         },
         {
             $Type                    : 'UI.DataField',
@@ -149,6 +156,10 @@ annotate service.Invoice with @(
             $Type : 'UI.DataFieldForAction',
             Action: 'InvCatalogService.copyInvoice',
             Label : '{i18n>copy}',
+        },
+        {
+            $Type : 'UI.DataField',
+            Value : mode,
         },
     ],
     UI.HeaderFacets                             : [{
@@ -258,7 +269,7 @@ annotate service.Invoice with @(
             $Type                : 'UI.DataField',
             Value                : documentId,
             Label                : '{i18n>DocumentId}',
-            ![@HTML5.CssDefaults]: {width: '7%', },
+            ![@HTML5.CssDefaults]: {width: '150px', },
         },
         {
             $Type                    : 'UI.DataField',
@@ -316,6 +327,10 @@ annotate service.Invoice with @(
             $Type : 'UI.DataFieldForAction',
             Action: 'InvCatalogService.copyInvoice',
             Label : '{i18n>copy}',
+        },
+        {
+            $Type : 'UI.DataField',
+            Value : mode,
         },
     ],
     UI.SelectionPresentationVariant #tableView1 : {
@@ -349,7 +364,7 @@ annotate service.Invoice with @(
             $Type                : 'UI.DataField',
             Value                : documentId,
             Label                : '{i18n>DocumentId}',
-            ![@HTML5.CssDefaults]: {width: '7%', },
+            ![@HTML5.CssDefaults]: {width: '150px', },
         },
         {
             $Type                    : 'UI.DataField',
@@ -407,6 +422,10 @@ annotate service.Invoice with @(
             $Type : 'UI.DataFieldForAction',
             Action: 'InvCatalogService.copyInvoice',
             Label : '{i18n>copy}',
+        },
+        {
+            $Type : 'UI.DataField',
+            Value : mode,
         },
     ],
     UI.SelectionPresentationVariant #tableView2 : {
@@ -439,7 +458,7 @@ annotate service.Invoice with @(
             $Type                : 'UI.DataField',
             Value                : documentId,
             Label                : '{i18n>DocumentId}',
-            ![@HTML5.CssDefaults]: {width: '7%', },
+            ![@HTML5.CssDefaults]: {width: '150px', },
         },
         {
             $Type                    : 'UI.DataField',
@@ -497,6 +516,10 @@ annotate service.Invoice with @(
             $Type : 'UI.DataFieldForAction',
             Action: 'InvCatalogService.copyInvoice',
             Label : '{i18n>copy}',
+        },
+        {
+            $Type : 'UI.DataField',
+            Value : mode,
         },
     ],
     UI.SelectionPresentationVariant #tableView3 : {
@@ -529,7 +552,7 @@ annotate service.Invoice with @(
             $Type                : 'UI.DataField',
             Value                : documentId,
             Label                : '{i18n>DocumentId}',
-            ![@HTML5.CssDefaults]: {width: '7%', },
+            ![@HTML5.CssDefaults]: {width: '150px', },
         },
         {
             $Type                    : 'UI.DataField',
@@ -587,6 +610,10 @@ annotate service.Invoice with @(
             $Type : 'UI.DataFieldForAction',
             Action: 'InvCatalogService.copyInvoice',
             Label : '{i18n>copy}',
+        },
+        {
+            $Type : 'UI.DataField',
+            Value : mode,
         },
     ],
     UI.SelectionPresentationVariant #tableView4 : {
@@ -701,7 +728,6 @@ annotate service.Invoice with @Aggregation.ApplySupported: {
         'concat',
         'groupby',
         'filter',
-        'expand',
         'search'
     ],
     Rollup                : #None,
@@ -769,4 +795,41 @@ annotate service.Invoice with {
 annotate service.Invoice with {
     statusFlag @Common.Label : '{i18n>Status}'
 };
+
+annotate service.InvoiceLogs with @(
+    UI.LineItem #i18nInvoiceLog : [
+        {
+            $Type : 'UI.DataField',
+            Value : stepNo,
+            Label : '{i18n>StepNo}',
+        },
+        {
+            $Type : 'UI.DataField',
+            Value : logMessage,
+            Label : '{i18n>LogMessage}',
+            ![@HTML5.CssDefaults]: {width: '1000px', },
+        },
+    ],
+    UI.SelectionPresentationVariant #i18nInvoiceLog : {
+        $Type : 'UI.SelectionPresentationVariantType',
+        PresentationVariant : {
+            $Type : 'UI.PresentationVariantType',
+            Visualizations : [
+                '@UI.LineItem#i18nInvoiceLog',
+            ],
+            SortOrder : [
+                {
+                    $Type : 'Common.SortOrderType',
+                    Property : stepNo,
+                    Descending : false,
+                },
+            ],
+        },
+        SelectionVariant : {
+            $Type : 'UI.SelectionVariantType',
+            SelectOptions : [
+            ],
+        },
+    },
+);
 

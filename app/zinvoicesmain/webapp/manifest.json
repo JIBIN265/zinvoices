@@ -257,6 +257,11 @@
                       "name": "InlineCreationRows"
                     }
                   }
+                },
+                "to_InvoiceLogs/@com.sap.vocabularies.UI.v1.LineItem#i18nInvoiceLog": {
+                  "tableSettings": {
+                    "type": "GridTable"
+                  }
                 }
               }
             }
