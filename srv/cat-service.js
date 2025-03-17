@@ -199,11 +199,10 @@ class InvCatalogService extends cds.ApplicationService {
                 req.data.status = 'Material Document Created'
                 //     return req;
             } catch (error) {
-                console.error('Error while posting invoice:', error.message);
+                console.error('Error while posting Material:', error.message);
                 req.data.statusFlag = 'E';
                 req.data.status = error.message;
-                req.errors(400, error.message);
-                if (req.errors) { req.reject(); }
+                return;
             }
         });
 
@@ -323,8 +322,10 @@ class InvCatalogService extends cds.ApplicationService {
 
                         const extractionResults = await processFileBuffer(form, req);
                     } catch (error) {
-                        req.error(400, "Error converting stream to Base64");
-                        if (req.errors) { req.reject(); }
+                        console.error('Error converting stream to Base64:', error.message);
+                        req.data.statusFlag = 'E';
+                        req.data.status = error.message;
+                        return;
                     }
 
                 }
@@ -381,8 +382,11 @@ class InvCatalogService extends cds.ApplicationService {
                         }
                     }
                 } catch (error) {
-                    status = `Document extraction failed: ${error.message}`;
-                    await updateDraftOnly(req.data.ID, status);
+                    // status = `Document extraction failed: ${error.message}`;
+                    // await updateDraftOnly(req.data.ID, status);
+                    console.error('Document extraction failed:', error.message);
+                    req.data.statusFlag = 'E';
+                    req.data.status = error.message;
                     return;
                 }
 
@@ -425,9 +429,10 @@ class InvCatalogService extends cds.ApplicationService {
                 await postInvoice(req);
                 // }
             } catch (error) {
-                console.error("Error in processFileBuffer:", error);
-                req.error(400, "Error processing file buffer");
-                if (req.errors) { req.reject(); }
+                console.error('Error processing file buffer:', error.message);
+                req.data.statusFlag = 'E';
+                req.data.status = error.message;
+                return;
             }
         }
 
@@ -784,19 +789,44 @@ class InvCatalogService extends cds.ApplicationService {
                     const { purchaseOrder, purchaseOrderItem, sup_InvoiceItem, quantityPOUnit, supInvItemAmount } = invoiceItem;
 
                     // Fetch PO details
-                    const purchaseOrderData = await pos.run(SELECT.one.from(PurchaseOrder).where({ PurchaseOrder: purchaseOrder }));
-                    if (!purchaseOrderData) {
-                        allItemsMatched = false;
-                        allStatusReasons.push(`Item ${sup_InvoiceItem}: Purchase Order not found`);
-                        continue;
+                    try {
+                        const purchaseOrderData = await pos.run(SELECT.one.from(PurchaseOrder).where({ PurchaseOrder: purchaseOrder }));
+                        if (!purchaseOrderData) {
+                            allItemsMatched = false;
+                            allStatusReasons.push(`Item ${sup_InvoiceItem}: Purchase Order not found`);
+                            continue;
+                        }
+                    } catch (error) {
+                        if (!purchaseOrderData) {
+                            allItemsMatched = false;
+                            allStatusReasons.push(`Item ${sup_InvoiceItem}: Purchase Order not found`);
+                            continue;
+                        }
+                        console.error('PO retrieval failed:', error.message);
+                        req.data.statusFlag = 'E';
+                        req.data.status = error.message;
+                        return;
                     }
 
-                    const purchaseOrderItemData = await pos.run(SELECT.one.from(PurchaseOrderItem).where({ PurchaseOrder: purchaseOrder, PurchaseOrderItem: purchaseOrderItem }));
-                    if (!purchaseOrderItemData) {
-                        allItemsMatched = false;
-                        allStatusReasons.push(`Item ${sup_InvoiceItem}: Purchase Order Item not found`);
-                        continue;
+                    try {
+                        const purchaseOrderItemData = await pos.run(SELECT.one.from(PurchaseOrderItem).where({ PurchaseOrder: purchaseOrder, PurchaseOrderItem: purchaseOrderItem }));
+                        if (!purchaseOrderItemData) {
+                            allItemsMatched = false;
+                            allStatusReasons.push(`Item ${sup_InvoiceItem}: Purchase Order Item not found`);
+                            continue;
+                        }
+                    } catch (error) {
+                        if (!purchaseOrderItemData) {
+                            allItemsMatched = false;
+                            allStatusReasons.push(`Item ${sup_InvoiceItem}: Purchase Order Item not found`);
+                            continue;
+                        }
+                        console.error('PO Item retrieval failed:', error.message);
+                        req.data.statusFlag = 'E';
+                        req.data.status = error.message;
+                        return;
                     }
+
 
                     // Fetch GR details
                     let materialDocumentData;
@@ -807,7 +837,10 @@ class InvCatalogService extends cds.ApplicationService {
                         );
 
                     } catch (error) {
-                        req.error(500, `Unexpected error: ${error.message}`);
+                        console.error('Material retrieval failed:', error.message);
+                        req.data.statusFlag = 'E';
+                        req.data.status = error.message;
+                        return;
                     }
 
                     let materialItemData;
@@ -822,7 +855,10 @@ class InvCatalogService extends cds.ApplicationService {
                                     })
                             );
                         } catch (error) {
-                            req.error(500, `Unexpected error: ${error.message}`);
+                            console.error('Material Item retrieval failed:', error.message);
+                            req.data.statusFlag = 'E';
+                            req.data.status = error.message;
+                            return;
                         }
                     }
 
@@ -892,7 +928,7 @@ class InvCatalogService extends cds.ApplicationService {
                 req.data.status = error.message;
                 req.data.statusFlag = 'E';
                 console.error("Unexpected error in ThreeWayMatch:", error.message);
-                return req.error(400, `Unexpected error: ${error.message}`);
+                return;
             }
         }
 
@@ -941,8 +977,7 @@ class InvCatalogService extends cds.ApplicationService {
                 console.error('Error while posting invoice:', error.message);
                 req.data.statusFlag = 'E';
                 req.data.status = error.message;
-                req.errors(400, error.message);
-                if (req.errors) { req.reject(); }
+                return;
             }
         }
 

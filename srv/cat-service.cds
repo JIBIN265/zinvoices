@@ -106,6 +106,5 @@ service InvCatalogService @(requires: 'authenticated-user') {
         message : String;
         indicator : String(1);
         url : String;
-
     };
 }

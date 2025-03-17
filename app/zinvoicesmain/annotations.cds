@@ -206,21 +206,13 @@ annotate service.Invoice with @(
         },
         Text               : 'Table View',
     },
-    Analytics.AggregatedProperty #documentId_countdistinct: {
-        $Type               : 'Analytics.AggregatedPropertyType',
-        Name                : 'documentId_countdistinct',
-        AggregatableProperty: documentId,
-        AggregationMethod   : 'countdistinct',
-        ![@Common.Label]    : '{i18n>DocumentIdCountDistinct}',
-    },
     UI.Chart #chartView                                   : {
         $Type          : 'UI.ChartDefinitionType',
         ChartType      : #Column,
         Dimensions     : [
-            supInvParty,
             createdBy,
         ],
-        DynamicMeasures: ['@Analytics.AggregatedProperty#documentId_countdistinct', ],
+        DynamicMeasures: ['@Analytics.AggregatedProperty#documentId_sum', ],
         Title          : '{i18n>DocumentsBySupplierInvoice}',
     },
     UI.SelectionPresentationVariant #chartView            : {
@@ -618,6 +610,13 @@ annotate service.Invoice with @(
             }, ],
         },
         Text               : '{i18n>ErroneousInvoices}',
+    },
+    Analytics.AggregatedProperty #documentId_sum : {
+        $Type : 'Analytics.AggregatedPropertyType',
+        Name : 'documentId_sum',
+        AggregatableProperty : documentId,
+        AggregationMethod : 'sum',
+        ![@Common.Label] : 'documentId (Sum)',
     },
 );
 
