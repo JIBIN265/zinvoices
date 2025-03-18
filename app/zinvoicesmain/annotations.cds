@@ -79,7 +79,7 @@ annotate service.Invoice with @(
             $Type : 'UI.ReferenceFacet',
             Label : '{i18n>ItemDetails}',
             ID    : 'ItemDetails',
-            Target: 'to_InvoiceItem/@UI.LineItem#ItemDetails',
+            Target: 'to_InvoiceItem/@UI.SelectionPresentationVariant#ItemDetails',
         },
         {
             $Type : 'UI.ReferenceFacet',
@@ -716,7 +716,28 @@ annotate service.InvoiceItem with @(UI.LineItem #ItemDetails: [
         Value: refDocItem,
         Label: '{i18n>RefDocItem}',
     },
-]);
+],
+    UI.SelectionPresentationVariant #ItemDetails : {
+        $Type : 'UI.SelectionPresentationVariantType',
+        PresentationVariant : {
+            $Type : 'UI.PresentationVariantType',
+            Visualizations : [
+                '@UI.LineItem#ItemDetails',
+            ],
+            SortOrder : [
+                {
+                    $Type : 'Common.SortOrderType',
+                    Property : purchaseOrderItem,
+                    Descending : false,
+                },
+            ],
+        },
+        SelectionVariant : {
+            $Type : 'UI.SelectionVariantType',
+            SelectOptions : [
+            ],
+        },
+    },);
 
 
 annotate service.Invoice with @Aggregation.ApplySupported: {

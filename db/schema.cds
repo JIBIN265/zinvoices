@@ -25,6 +25,7 @@ entity InvoiceEntity : cuid, managed, {
   mode                   : String(10);
   dmsFolder              : String(50);
   senderMail             : String(40);
+  logincr                : Integer;
   statusColor            : Association to one StatusValues
                              on statusColor.code = statusFlag;
   newInvoice             : String(10);

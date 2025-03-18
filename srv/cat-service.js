@@ -218,22 +218,22 @@ class InvCatalogService extends cds.ApplicationService {
 
             if (req.data.mode === 'email') {
 
-                let logincr = 1;
                 let logs = [];
+                req.data.logincr = 1;
                 logs.push({
-                    stepNo: logincr,
+                    stepNo: req.data.logincr,
                     logMessage: 'Recieved Attachments from Email: ' + req.data.senderMail,
                 });
 
-                logincr = logincr + 1;
+                req.data.logincr++;
                 logs.push({
-                    stepNo: logincr,
+                    stepNo: req.data.logincr,
                     logMessage: 'Added attachments to new Document ID:' + req.data.documentId,
                 });
 
-                logincr = logincr + 1;
+                req.data.logincr++;
                 logs.push({
-                    stepNo: logincr,
+                    stepNo: req.data.logincr,
                     logMessage: 'Attachment send for Document Extraction',
                 });
 
@@ -293,7 +293,7 @@ class InvCatalogService extends cds.ApplicationService {
                             };
                             form.append('options', JSON.stringify(options));
 
-                            const extractionResults = await processFileBuffer(form, req, logincr, logs);
+                            const extractionResults = await processFileBuffer(form, req, logs);
 
                         }
                     }
@@ -306,9 +306,9 @@ class InvCatalogService extends cds.ApplicationService {
                     console.error('Document extraction failed:', error.message);
                     req.data.statusFlag = 'E';
                     req.data.status = error.message;
-                    logincr = logincr + 1;
+                    req.data.logincr + 1;
                     logs.push({
-                        stepNo: logincr,
+                        stepNo: req.data.logincr,
                         logMessage: error.message,
                     });
                     req.data.to_InvoiceLogs = logs;
@@ -317,7 +317,7 @@ class InvCatalogService extends cds.ApplicationService {
             }
             else if (!req.data.fiscalYear) {
 
-                let logincr = 1;
+                req.data.logincr = 1;
 
                 const allRecords = await this.run(
                     SELECT.from(Invoice.drafts)
@@ -377,7 +377,7 @@ class InvCatalogService extends cds.ApplicationService {
         });
 
 
-        async function processFileBuffer(form, req, logincr, logs) {
+        async function processFileBuffer(form, req, logs) {
             try {
 
                 let status = '';
@@ -425,9 +425,9 @@ class InvCatalogService extends cds.ApplicationService {
                     console.error('Document extraction failed:', error.message);
                     req.data.statusFlag = 'E';
                     req.data.status = error.message;
-                    logincr = logincr + 1;
+                    req.data.logincr++;
                     logs.push({
-                        stepNo: logincr,
+                        stepNo: req.data.logincr,
                         logMessage: error.message,
                     });
                     return;
@@ -453,39 +453,40 @@ class InvCatalogService extends cds.ApplicationService {
 
                 //Check Extraction Confidence.
                 if (headerConfidence.purchaseOrderNumber && headerConfidence.purchaseOrderNumber > 0.8) {
-                    logincr = logincr + 1;
+                    req.data.logincr = req.data.logincr + 1;
                     logs.push({
-                        stepNo: logincr,
-                        logMessage: 'Checked Extraction Confidence of Purchase Order Number fields',
+                        stepNo: req.data.logincr,
+                        logMessage: `Checked Extraction Confidence of Purchase Order Number fields: ${headerConfidence.purchaseOrderNumber ?? 0}`,
                     });
                 } else {
-                    logincr = logincr + 1;
+                    req.data.logincr = req.data.logincr + 1;
                     logs.push({
-                        stepNo: logincr,
-                        logMessage: 'Low confidence in Purchase Order Number extraction',
+                        stepNo: req.data.logincr,
+                        logMessage: `Low confidence in Purchase Order Number extraction: ${headerConfidence.purchaseOrderNumber ?? 0}`,
                     });
                     req.data.statusFlag = 'E';
-                    req.data.status = 'Low confidence in Purchase Order Number extraction';
-                    return
+                    req.data.status = `Low confidence in Purchase Order Number extraction: ${headerConfidence.purchaseOrderNumber ?? 0}`;
+                    return;
                 }
 
-                if (headerConfidence.grossAmount && headerConfidence.grossAmount > 0.8) {
-                    logincr = logincr + 1;
+                if (headerConfidence.grossAmount && headerConfidence.grossAmount > 0.7) {
+                    req.data.logincr = req.data.logincr + 1;
                     logs.push({
-                        stepNo: logincr,
-                        logMessage: 'Checked Extraction Confidence of Gross Amount fields',
+                        stepNo: req.data.logincr,
+                        logMessage: `Checked Extraction Confidence of Gross Amount fields: ${headerConfidence.grossAmount ?? 0}`,
                     });
                 } else {
-                    logincr = logincr + 1;
+                    req.data.logincr = req.data.logincr + 1;
                     logs.push({
-                        stepNo: logincr,
-                        logMessage: 'Low confidence in Gross Amount extraction',
+                        stepNo: req.data.logincr,
+                        logMessage: `Low confidence in Gross Amount extraction: ${headerConfidence.grossAmount ?? 0}`,
                     });
 
                     req.data.statusFlag = 'E';
-                    req.data.status = 'Low confidence in Gross Amount extraction';
-                    return
+                    req.data.status = `Low confidence in Gross Amount extraction: ${headerConfidence.grossAmount ?? 0}`;
+                    return;
                 }
+
 
                 // Populate req.data.Invoice with mapped values
                 const today = new Date();
@@ -499,28 +500,29 @@ class InvCatalogService extends cds.ApplicationService {
                 req.data.to_InvoiceItem = lineItems.map((lineItem, index) => ({
                     sup_InvoiceItem: (index + 1).toString().padStart(5, "0"),
                     purchaseOrder: headerFields.purchaseOrderNumber,
-                    purchaseOrderItem: (index + 10).toString().padStart(5, "0"),
+                    purchaseOrderItem: ((index + 1)*10).toString().padStart(5, "0"),
                     documentCurrency_code: headerFields.currencyCode,
-                    supInvItemAmount: parseFloat(lineItem.netAmount),
+                    supInvItemAmount: lineItem.netAmount != null ? parseFloat(lineItem.netAmount) : (parseFloat(lineItem.quantity) || 0) * (parseFloat(lineItem.unitPrice) || 0),
                     poQuantityUnit: "PC",
-                    quantityPOUnit: parseFloat(lineItem.quantity),
+                    quantityPOUnit: parseFloat(lineItem.quantity) || 0,
                     taxCode: "P0"
                 }));
 
-                // await threeWayMatch(req);
-                // if (req.data.statusFlag === 'S') {
-                await postInvoice(req, logincr, logs);
-                // }
+                await threeWayMatch(req, logs);
+                if (req.data.statusFlag === 'S') {
+                    await postInvoice(req, logs);
+                }
+                return { req, logs }
             } catch (error) {
                 console.error('Error processing file buffer:', error.message);
                 req.data.statusFlag = 'E';
                 req.data.status = error.message;
-                logincr = logincr + 1;
+                req.data.logincr = req.data.logincr + 1;
                 logs.push({
-                    stepNo: logincr,
+                    stepNo: req.data.logincr,
                     logMessage: error.message,
                 });
-                return;
+                return { req, logs };
             }
         }
 
@@ -866,162 +868,162 @@ class InvCatalogService extends cds.ApplicationService {
             );
         }
 
-        async function threeWayMatch(req) {
+        async function threeWayMatch(req, logs) {
             try {
-                console.log("Three-way Verification Code Check");
+                let overallStatus = 'Matched';  // Default status
+                let statusReasons = [];
 
-                let allItemsMatched = true;
-                let allStatusReasons = [];
+                // Define Tolerance Levels
+                const quantityTolerancePercentage = 0.05; // 5% tolerance
+                const amountTolerancePercentage = 0.05;   // 5% tolerance
 
-                for (const invoiceItem of req.data.to_InvoiceItem) {
-                    const { purchaseOrder, purchaseOrderItem, sup_InvoiceItem, quantityPOUnit, supInvItemAmount } = invoiceItem;
+                // Group Invoice Lines by PO Item
+                const invoiceItemGroups = req.data.to_InvoiceItem.reduce((acc, item) => {
+                    const key = `${item.purchaseOrder}-${item.purchaseOrderItem}`;
+                    acc[key] = acc[key] || { quantity: 0, amount: 0, items: [] };
+                    acc[key].quantity += Number(item.quantityPOUnit);
+                    acc[key].amount += Number(item.supInvItemAmount);
+                    acc[key].items.push(item);
+                    return acc;
+                }, {});
 
-                    // Fetch PO details
-                    try {
-                        const purchaseOrderData = await pos.run(SELECT.one.from(PurchaseOrder).where({ PurchaseOrder: purchaseOrder }));
-                        if (!purchaseOrderData) {
-                            allItemsMatched = false;
-                            allStatusReasons.push(`Item ${sup_InvoiceItem}: Purchase Order not found`);
-                            continue;
-                        }
-                    } catch (error) {
-                        if (!purchaseOrderData) {
-                            allItemsMatched = false;
-                            allStatusReasons.push(`Item ${sup_InvoiceItem}: Purchase Order not found`);
-                            continue;
-                        }
-                        console.error('PO retrieval failed:', error.message);
+                // Process Each Invoice Line Group
+                for (const [key, invoiceGroup] of Object.entries(invoiceItemGroups)) {
+                    const { quantity, amount, items } = invoiceGroup;
+                    const firstItem = items[0];  // Representative invoice item
+
+                    // Fetch PO Data
+                    const purchaseOrderItemData = await pos.run(SELECT.one
+                        .from('PurchaseOrderItem')
+                        .where({ PurchaseOrder: firstItem.purchaseOrder, PurchaseOrderItem: firstItem.purchaseOrderItem }));
+
+                    if (!purchaseOrderItemData) {
+                        overallStatus = 'Mismatch';
+                        statusReasons.push(`PO item ${firstItem.purchaseOrderItem} not found for PO ${firstItem.purchaseOrder}`);
+                        req.data.logincr++;
+                        logs.push({
+                            stepNo: req.data.logincr,
+                            logMessage: `PO item ${firstItem.purchaseOrderItem} not found for PO ${firstItem.purchaseOrder}`,
+                        });
+                        overallStatus = 'Mismatch';
                         req.data.statusFlag = 'E';
-                        req.data.status = error.message;
-                        return;
-                    }
-
-                    try {
-                        const purchaseOrderItemData = await pos.run(SELECT.one.from(PurchaseOrderItem).where({ PurchaseOrder: purchaseOrder, PurchaseOrderItem: purchaseOrderItem }));
-                        if (!purchaseOrderItemData) {
-                            allItemsMatched = false;
-                            allStatusReasons.push(`Item ${sup_InvoiceItem}: Purchase Order Item not found`);
-                            continue;
-                        }
-                    } catch (error) {
-                        if (!purchaseOrderItemData) {
-                            allItemsMatched = false;
-                            allStatusReasons.push(`Item ${sup_InvoiceItem}: Purchase Order Item not found`);
-                            continue;
-                        }
-                        console.error('PO Item retrieval failed:', error.message);
-                        req.data.statusFlag = 'E';
-                        req.data.status = error.message;
-                        return;
-                    }
-
-
-                    // Fetch GR details
-                    let materialDocumentData;
-                    try {
-                        materialDocumentData = await grs.run(
-                            SELECT.one.from(A_MaterialDocumentHeader)
-                                .where({ ReferenceDocument: purchaseOrder })
-                        );
-
-                    } catch (error) {
-                        console.error('Material retrieval failed:', error.message);
-                        req.data.statusFlag = 'E';
-                        req.data.status = error.message;
-                        return;
-                    }
-
-                    let materialItemData;
-                    if (materialDocumentData) {
-                        try {
-                            materialItemData = await grs.run(
-                                SELECT.one.from(A_MaterialDocumentItem)
-                                    .where({
-                                        MaterialDocument: materialDocumentData.MaterialDocument,
-                                        MaterialDocumentYear: materialDocumentData.MaterialDocumentYear,
-                                        PurchaseOrderItem: purchaseOrderItem
-                                    })
-                            );
-                        } catch (error) {
-                            console.error('Material Item retrieval failed:', error.message);
-                            req.data.statusFlag = 'E';
-                            req.data.status = error.message;
-                            return;
-                        }
-                    }
-
-                    // Determine item status
-                    let itemStatus = 'Three Way Matched';
-                    let statusReasons = [];
-
-                    // Convert quantityPOUnit from string to number
-                    const quantityPOUnitNumber = Number(quantityPOUnit);
-
-                    // Ensure supInvItemAmount and purchaseOrderItemData.NetPriceAmount are numbers
-                    const supInvItemAmountNumber = Number(supInvItemAmount);
-                    const netPriceAmountNumber = Number(purchaseOrderItemData.NetPriceAmount);
-
-                    // Compare quantityPOUnit with purchaseOrderItemData.OrderQuantity
-                    if (quantityPOUnitNumber !== purchaseOrderItemData.OrderQuantity) {
-                        itemStatus = 'Discrepancy';
-                        statusReasons.push('Quantity mismatch with PO');
-                    }
-
-                    // Compare supInvItemAmount with purchaseOrderItemData.NetPriceAmount
-                    if (supInvItemAmountNumber !== netPriceAmountNumber) {
-                        itemStatus = 'Discrepancy';
-                        statusReasons.push('Amount mismatch with PO');
-                    }
-
-                    // Check if materialItemData exists and compare quantities
-                    if (!materialItemData) {
-                        itemStatus = 'Discrepancy';
-                        statusReasons.push('No matching Goods Receipt found');
+                        req.data.status = 'Three way mismatch';
+                        continue;
                     } else {
-                        const materialQuantityNumber = Number(materialItemData.QuantityInBaseUnit);
-                        if (quantityPOUnitNumber > materialQuantityNumber) {
-                            itemStatus = 'Discrepancy';
-                            statusReasons.push('Quantity mismatch with GR (Partial delivery)');
-                        }
-                        if (quantityPOUnitNumber < materialQuantityNumber) {
-                            itemStatus = 'Discrepancy';
-                            statusReasons.push('Quantity mismatch with GR (Over-delivery)');
-                        }
+                        req.data.logincr++;
+                        logs.push({
+                            stepNo: req.data.logincr,
+                            logMessage: `PO item ${firstItem.purchaseOrderItem} found for PO ${firstItem.purchaseOrder}`,
+                        });
                     }
 
-                    if (itemStatus !== 'Three Way Matched') {
-                        allItemsMatched = false;
-                        if (statusReasons.length > 0) {
-                            allStatusReasons.push(`Item ${purchaseOrderItem}: ${statusReasons.join(', ')}`);
-                        }
+                    // Fetch Goods Receipt Data
+                    const materialItemData = await grs.run(
+                        SELECT.from(A_MaterialDocumentItem)
+                            .where({ PurchaseOrder: firstItem.purchaseOrder, PurchaseOrderItem: firstItem.purchaseOrderItem })
+                    );
+
+                    if (!materialItemData) {
+                        overallStatus = 'Mismatch';
+                        statusReasons.push(`Material Details not found for PO ${firstItem.purchaseOrder}`);
+                        req.data.logincr++;
+                        logs.push({
+                            stepNo: req.data.logincr,
+                            logMessage: `Material Details not found for PO ${firstItem.purchaseOrder}`,
+                        });
+                        overallStatus = 'Mismatch';
+                        req.data.statusFlag = 'E';
+                        req.data.status = 'Three way mismatch';
+                    } else {
+                        req.data.logincr++;
+                        logs.push({
+                            stepNo: req.data.logincr,
+                            logMessage: `Material Details found for PO ${firstItem.purchaseOrder}`,
+                        });
+                    }
+
+                    // Aggregate Goods Receipt Quantities (Ensure non-empty data)
+                    const grTotalQuantity = materialItemData.length > 0
+                        ? materialItemData.reduce((sum, item) => sum + Number(item.QuantityInBaseUnit), 0)
+                        : 0;
+
+                    // Convert Net Price Amount to Number
+                    const netPriceAmountNumber = Number(purchaseOrderItemData.NetPriceAmount) * (purchaseOrderItemData.OrderQuantity || 1);
+
+                    // Apply Tolerance
+                    const quantityTolerance = quantityTolerancePercentage * (purchaseOrderItemData.OrderQuantity || 1);
+                    const amountTolerance = amountTolerancePercentage * netPriceAmountNumber;
+
+                    let itemMismatch = false;  // Track if this item has mismatches
+
+                    // Check Quantity Matching
+                    if (Math.abs(quantity - purchaseOrderItemData.OrderQuantity) > quantityTolerance) {
+                        itemMismatch = true;
+                        statusReasons.push(`Quantity mismatch for PO item ${firstItem.purchaseOrderItem}: Invoice = ${quantity}, PO = ${purchaseOrderItemData.OrderQuantity}`);
+                        req.data.logincr++;
+                        logs.push({
+                            stepNo: req.data.logincr,
+                            logMessage: `Quantity mismatch for PO item ${firstItem.purchaseOrderItem}: Invoice = ${quantity}, PO = ${purchaseOrderItemData.OrderQuantity}`,
+                        });
+                    }
+
+                    // Check Amount Matching
+                    if (Math.abs(amount - netPriceAmountNumber) > amountTolerance) {
+                        itemMismatch = true;
+                        statusReasons.push(`Amount mismatch for PO item ${firstItem.purchaseOrderItem}: Invoice = ${amount}, PO = ${netPriceAmountNumber}`);
+                        req.data.logincr++;
+                        logs.push({
+                            stepNo: req.data.logincr,
+                            logMessage: `Amount mismatch for PO item ${firstItem.purchaseOrderItem}: Invoice = ${amount}, PO = ${netPriceAmountNumber}`,
+                        });
+                    }
+
+                    // Check GR Matching
+                    if (Math.abs(quantity - grTotalQuantity) > quantityTolerance) {
+                        itemMismatch = true;
+                        statusReasons.push(`GR quantity mismatch for PO item ${firstItem.purchaseOrderItem}: Invoice = ${quantity}, GR = ${grTotalQuantity}`);
+                        req.data.logincr++;
+                        logs.push({
+                            stepNo: req.data.logincr,
+                            logMessage: `GR quantity mismatch for PO item ${firstItem.purchaseOrderItem}: Invoice = ${quantity}, GR = ${grTotalQuantity}`,
+                        });
+                    }
+
+                    if (itemMismatch) {
+                        overallStatus = 'Mismatch';
+                        req.data.statusFlag = 'E';
+                        req.data.status = 'Three way mismatch';
+                    }
+                    else {
+                        req.data.statusFlag = 'S';
+                        req.data.status = 'Three way matched';
                     }
                 }
 
-                // Determine overall invoice status and update the database
-                const overallStatus = allItemsMatched ? 'Three Way Matched' : 'Discrepancy';
-                let statusWithReasons = overallStatus;
-                let failFlag = 'S';
+                // Log and Return Final Status
+                console.log("Matching Status:", overallStatus);
+                console.log("Mismatch Reasons:", statusReasons);
+                req.data.logincr++;
+                logs.push({
+                    stepNo: req.data.logincr,
+                    logMessage: req.data.status,
+                });
 
-                if (overallStatus === 'Discrepancy') {
-                    statusWithReasons += `: ${allStatusReasons.join('; ')}`;
-                }
-                const overallStatusFlag = overallStatus === 'Three Way Matched' ? 'S' : 'E';
-
-                req.data.status = statusWithReasons;
-                req.data.statusFlag = overallStatusFlag;
-
-                return req;
+                return { req, logs };
 
             } catch (error) {
                 req.data.status = error.message;
                 req.data.statusFlag = 'E';
-                console.error("Unexpected error in ThreeWayMatch:", error.message);
-                return;
+                req.data.logincr++;
+                logs.push({ stepNo: req.data.logincr, logMessage: error.message });
+                console.error("Error in Three-Way Matching:", error);
+                return { req, logincr, logs };
             }
         }
 
 
-        async function postInvoice(req, logincr, logs) {
+
+        async function postInvoice(req, logs) {
             try {
                 const {
                     fiscalYear,
@@ -1061,22 +1063,22 @@ class InvCatalogService extends cds.ApplicationService {
                 req.data.newInvoice = response.SupplierInvoice;
                 req.data.status = 'Supplier Invoice Posted';
                 req.data.statusFlag = 'S';
-                logincr = logincr + 1;
+                req.data.logincr = req.data.logincr + 1;
                 logs.push({
-                    stepNo: logincr,
+                    stepNo: req.data.logincr,
                     logMessage: 'Supplier Invoice Posted with Invoice No:' + response.SupplierInvoice,
                 });
-                return req;
+                return { req, logs };
             } catch (error) {
                 console.error('Error while posting invoice:', error.message);
                 req.data.statusFlag = 'E';
                 req.data.status = error.message;
-                logincr = logincr + 1;
+                req.data.logincr = req.data.logincr + 1;
                 logs.push({
-                    stepNo: logincr,
+                    stepNo: req.data.logincr,
                     logMessage: error.message,
                 });
-                return;
+                return { req, logs };
             }
         }
 
