@@ -246,21 +246,9 @@
                 }
               },
               "controlConfiguration": {
-                "to_InvoiceItem/@com.sap.vocabularies.UI.v1.LineItem#ItemDetails": {
-                  "tableSettings": {
-                    "enableFullScreen": true,
-                    "enableExport": true,
-                    "widthIncludingColumnHeader": true,
-                    "type": "GridTable",
-                    "condensedTableLayout": true,
-                    "creationMode": {
-                      "name": "InlineCreationRows"
-                    }
-                  }
-                },
                 "to_InvoiceLogs/@com.sap.vocabularies.UI.v1.LineItem#i18nInvoiceLog": {
                   "tableSettings": {
-                    "type": "GridTable"
+                    "enableExport": true
                   }
                 }
               }

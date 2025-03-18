@@ -500,7 +500,7 @@ class InvCatalogService extends cds.ApplicationService {
                 req.data.to_InvoiceItem = lineItems.map((lineItem, index) => ({
                     sup_InvoiceItem: (index + 1).toString().padStart(5, "0"),
                     purchaseOrder: headerFields.purchaseOrderNumber,
-                    purchaseOrderItem: ((index + 1)*10).toString().padStart(5, "0"),
+                    purchaseOrderItem: ((index + 1) * 10).toString().padStart(5, "0"),
                     documentCurrency_code: headerFields.currencyCode,
                     supInvItemAmount: lineItem.netAmount != null ? parseFloat(lineItem.netAmount) : (parseFloat(lineItem.quantity) || 0) * (parseFloat(lineItem.unitPrice) || 0),
                     poQuantityUnit: "PC",
@@ -907,13 +907,13 @@ class InvCatalogService extends cds.ApplicationService {
                         });
                         overallStatus = 'Mismatch';
                         req.data.statusFlag = 'E';
-                        req.data.status = 'Three way mismatch';
+                        req.data.status = 'Invoice three-way mismatch';
                         continue;
                     } else {
                         req.data.logincr++;
                         logs.push({
                             stepNo: req.data.logincr,
-                            logMessage: `PO item ${firstItem.purchaseOrderItem} found for PO ${firstItem.purchaseOrder}`,
+                            logMessage: `PO ${firstItem.purchaseOrder} and PO item ${firstItem.purchaseOrderItem} found successfully.`,
                         });
                     }
 
@@ -933,12 +933,12 @@ class InvCatalogService extends cds.ApplicationService {
                         });
                         overallStatus = 'Mismatch';
                         req.data.statusFlag = 'E';
-                        req.data.status = 'Three way mismatch';
+                        req.data.status = 'Invoice three-way mismatch';
                     } else {
                         req.data.logincr++;
                         logs.push({
                             stepNo: req.data.logincr,
-                            logMessage: `Material Details found for PO ${firstItem.purchaseOrder}`,
+                            logMessage: `Material header and item details found for PO ${firstItem.purchaseOrder}, with document number ${materialItemData[0].MaterialDocument}.`
                         });
                     }
 
@@ -966,6 +966,13 @@ class InvCatalogService extends cds.ApplicationService {
                             logMessage: `Quantity mismatch for PO item ${firstItem.purchaseOrderItem}: Invoice = ${quantity}, PO = ${purchaseOrderItemData.OrderQuantity}`,
                         });
                     }
+                    else {
+                        req.data.logincr++;
+                        logs.push({
+                            stepNo: req.data.logincr,
+                            logMessage: `Quantity matched for PO item ${firstItem.purchaseOrderItem}: Invoice = ${quantity}, PO = ${purchaseOrderItemData.OrderQuantity}`,
+                        });
+                    }
 
                     // Check Amount Matching
                     if (Math.abs(amount - netPriceAmountNumber) > amountTolerance) {
@@ -975,6 +982,12 @@ class InvCatalogService extends cds.ApplicationService {
                         logs.push({
                             stepNo: req.data.logincr,
                             logMessage: `Amount mismatch for PO item ${firstItem.purchaseOrderItem}: Invoice = ${amount}, PO = ${netPriceAmountNumber}`,
+                        });
+                    } else {
+                        req.data.logincr++;
+                        logs.push({
+                            stepNo: req.data.logincr,
+                            logMessage: `Amount matched for PO item ${firstItem.purchaseOrderItem}: Invoice = ${amount}, PO = ${netPriceAmountNumber}`,
                         });
                     }
 
@@ -988,16 +1001,25 @@ class InvCatalogService extends cds.ApplicationService {
                             logMessage: `GR quantity mismatch for PO item ${firstItem.purchaseOrderItem}: Invoice = ${quantity}, GR = ${grTotalQuantity}`,
                         });
                     }
-
-                    if (itemMismatch) {
-                        overallStatus = 'Mismatch';
-                        req.data.statusFlag = 'E';
-                        req.data.status = 'Three way mismatch';
-                    }
                     else {
-                        req.data.statusFlag = 'S';
-                        req.data.status = 'Three way matched';
+                        req.data.logincr++;
+                        logs.push({
+                            stepNo: req.data.logincr,
+                            logMessage: `GR quantity matched for PO item ${firstItem.purchaseOrderItem}: Invoice = ${quantity}, GR = ${grTotalQuantity}`,
+                        });
                     }
+
+                    if (req.data.status !== 'Invoice three-way mismatch') {
+                        if (itemMismatch) {
+                            overallStatus = 'Mismatch';
+                            req.data.statusFlag = 'E';
+                            req.data.status = 'Invoice three-way mismatch';
+                        } else {
+                            req.data.statusFlag = 'S';
+                            req.data.status = 'Invoice three-way matched';
+                        }
+                    }
+
                 }
 
                 // Log and Return Final Status
