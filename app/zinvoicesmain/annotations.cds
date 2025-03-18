@@ -273,7 +273,7 @@ annotate service.Invoice with @(
         },
         {
             $Type                    : 'UI.DataField',
-            Value                    : statusColor.criticality,
+            Value                    : statusColor.value,
             Label                    : '{i18n>Status}',
             Criticality              : statusColor.criticality,
             CriticalityRepresentation: #WithIcon,
@@ -368,7 +368,7 @@ annotate service.Invoice with @(
         },
         {
             $Type                    : 'UI.DataField',
-            Value                    : statusColor.criticality,
+            Value                    : statusColor.value,
             Label                    : '{i18n>Status}',
             Criticality              : statusColor.criticality,
             CriticalityRepresentation: #WithIcon,
@@ -462,7 +462,7 @@ annotate service.Invoice with @(
         },
         {
             $Type                    : 'UI.DataField',
-            Value                    : statusColor.criticality,
+            Value                    : statusColor.value,
             Label                    : '{i18n>Status}',
             Criticality              : statusColor.criticality,
             CriticalityRepresentation: #WithIcon,
@@ -556,7 +556,7 @@ annotate service.Invoice with @(
         },
         {
             $Type                    : 'UI.DataField',
-            Value                    : statusColor.criticality,
+            Value                    : statusColor.value,
             Label                    : '{i18n>Status}',
             Criticality              : statusColor.criticality,
             CriticalityRepresentation: #WithIcon,
