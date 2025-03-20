@@ -158,3 +158,13 @@ aspect ProductProcurementEntity : cuid, managed {
   VarblPurOrdUnitStatus     : String(1);
   PurchasingAcknProfile     : String(4);
 }
+
+entity MediaFile : cuid{
+  @Core.ContentDisposition.Filename:fileName
+  @Core.MediaType: mediaType
+  content : LargeBinary;
+  fileName : String;
+  @Core.IsMediaType: true
+  mediaType : String;
+  url : String;
+}

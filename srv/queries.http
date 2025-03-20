@@ -32,3 +32,15 @@ Content-Type: application/json
     ]
 }
 
+### empty object
+POST http://localhost:4004/odata/v4/inv-catalog/MediaFile
+Content-Type: application/json
+
+{}
+
+### Upload Document Test
+PUT http://localhost:4004/odata/v4/inv-catalog/MediaFile(a8d2d638-c156-48c3-b1f9-5f1be40a9a2d)/content
+Content-Type: application/pdf
+slug: alfreds invoice.pdf
+
+< ./alfreds invoice.pdf

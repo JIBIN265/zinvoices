@@ -5,7 +5,7 @@ const { SELECT } = require('@sap/cds/lib/ql/cds-ql');
 const MAX_RETRIES = 30;
 const RETRY_DELAY_MS = 3000;
 const { uuid } = cds.utils;
-const { Readable } = require("stream");
+const { Readable, PassThrough } = require("stream");
 const fs = require('fs');
 const path = require('path');
 const { executeHttpRequest } = require("@sap-cloud-sdk/http-client");
@@ -22,7 +22,8 @@ class InvCatalogService extends cds.ApplicationService {
             PurchaseOrder,
             PurchaseOrderItem,
             A_MaterialDocumentHeader,
-            A_MaterialDocumentItem
+            A_MaterialDocumentItem,
+            MediaFile
         } = this.entities;
 
         // const [DocumentExtraction_Dest] = await Promise.all([
@@ -1185,6 +1186,54 @@ class InvCatalogService extends cds.ApplicationService {
             }
 
 
+        });
+
+        this.on('UPDATE', MediaFile, async (req) => {
+            debugger;
+            const url = req._.req.path;
+            if (url.includes('content')) {
+                const id = req.data.ID;
+
+                const mediaRecord = await db.run(
+                    SELECT.from(MediaFile).where({ ID: id })
+                );
+
+                if (!mediaRecord) {
+                    req.reject(404, "No data Found");
+                    return;
+                }
+
+                let obj = [];
+                obj.fileName = req.headers.slug;
+                obj.mediaType = req.headers['content-type'];
+                obj.url = `/inv-catalog/MediaFile(${id})/content`;
+
+                const stream = new PassThrough();
+                const chunks = [];
+
+                stream.on('data', (chunk) => {
+                    chunks.push(chunk);
+                })
+
+                stream.on('end', async () => {
+                    obj.content = Buffer.concat(chunks).toString('base64');
+                    const fileBuffer = Buffer.from(obj.content, 'base64');
+                    await db.run(
+                        UPDATE(MediaFile)
+                            .set({
+                                fileName: obj.fileName,
+                                mediaType: obj.mediaType,
+                                url: obj.url,
+                                content: obj.content
+                            })
+                            .where({ ID: id })
+                    );
+                })
+
+                req.data.content.pipe(stream);
+                debugger;
+
+            }
         });
 
         return super.init();

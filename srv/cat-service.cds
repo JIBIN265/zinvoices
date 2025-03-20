@@ -73,6 +73,8 @@ service InvCatalogService @(requires: 'authenticated-user') {
 
     entity Currencies               as projection on common.Currencies;
     entity StatusValues             as projection on persistence.StatusValues;
+    
+    entity MediaFile as projection on persistence.MediaFile;
 
     action postInvoice(documentNumber : String,
                        netAmount : String,
