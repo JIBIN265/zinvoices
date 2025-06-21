@@ -370,10 +370,11 @@ class InvCatalogService extends cds.ApplicationService {
                 }
             } else {
                 req.data.mode = 'manual';
-                // await threeWayMatch(req);
-                // if (req.data.statusFlag === 'S') {
-                await postInvoice(req);
-                // }
+                let logs = [];
+                await threeWayMatch(req, logs);
+                if (req.data.statusFlag === 'S') {
+                await postInvoice(req, logs);
+                }
             }
         });
 
