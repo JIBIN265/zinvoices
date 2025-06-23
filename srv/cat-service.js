@@ -610,7 +610,8 @@ class InvCatalogService extends cds.ApplicationService {
             delete copiedInvoice.HasDraftEntity;
             delete copiedInvoice.IsActiveEntity;
             delete copiedInvoice.newInvoice;
-            delete copiedInvoice.mode
+            delete copiedInvoice.mode;
+            delete copiedInvoice.status;
             copiedInvoice.DraftAdministrativeData_DraftUUID = cds.utils.uuid();
             // Ensure all related entities are copied
             if (originalInvoice.to_InvoiceItem) {
