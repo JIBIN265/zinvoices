@@ -26,6 +26,7 @@ entity InvoiceEntity : cuid, managed, {
   dmsFolder              : String(50);
   senderMail             : String(40);
   logincr                : Integer;
+  editmode               : String(5); // for knowing resubmission of failed invoices
   statusColor            : Association to one StatusValues
                              on statusColor.code = statusFlag;
   newInvoice             : String(10);

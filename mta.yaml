@@ -1,7 +1,7 @@
 _schema-version: 3.3.0
 ID: zinvoices
 description: Invoice Extraction and Three Way Matchings
-version: 1.0.31
+version: 1.0.39
 modules:
 - name: zinvoices-srv
   type: nodejs

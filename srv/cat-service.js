@@ -90,83 +90,6 @@ class InvCatalogService extends cds.ApplicationService {
 
         });
 
-        // this.before("SAVE", Product, async (req) => {
-        //     try {
-        //         // Prepare the payload
-        //         const payload = {
-        //             Product: req.data.Product,
-        //             ProductType: req.data.ProductType,
-        //             GrossWeight: req.data.GrossWeight,
-        //             WeightUnit: req.data.WeightUnit,
-        //             NetWeight: req.data.NetWeight,
-        //             ProductGroup: req.data.ProductGroup,
-        //             BaseUnit: req.data.BaseUnit,
-        //             ItemCategoryGroup: req.data.ItemCategoryGroup,
-        //             IndustrySector: req.data.IndustrySector,
-
-        //             // Plant Data
-        //             to_Plant: {
-        //                 results: req.data.to_Plant?.results?.map(item => ({
-        //                     Product: req.data.Product,
-        //                     Plant: item.Plant,
-        //                     AvailabilityCheckType: item.AvailabilityCheckType,
-        //                     PeriodType: item.PeriodType,
-        //                     ProfitCenter: item.ProfitCenter,
-        //                     MaintenanceStatusName: item.MaintenanceStatusName,
-        //                     FiscalYearCurrentPeriod: item.FiscalYearCurrentPeriod,
-        //                     FiscalMonthCurrentPeriod: item.FiscalMonthCurrentPeriod,
-        //                     BaseUnit: item.BaseUnit,
-        //                 })) || []
-        //             },
-
-        //             // Sales & Delivery Data
-        //             to_SalesDelivery: {
-        //                 results: req.data.to_SalesDelivery?.results?.map(item => ({
-        //                     Product: req.data.Product,
-        //                     ProductSalesOrg: item.ProductSalesOrg,
-        //                     ProductDistributionChnl: item.ProductDistributionChnl,
-        //                     MinimumOrderQuantity: item.MinimumOrderQuantity,
-        //                     SupplyingPlant: item.SupplyingPlant,
-        //                     PriceSpecificationProductGroup: item.PriceSpecificationProductGroup,
-        //                     AccountDetnProductGroup: item.AccountDetnProductGroup,
-        //                     DeliveryNoteProcMinDelivQty: item.DeliveryNoteProcMinDelivQty,
-        //                     ItemCategoryGroup: item.ItemCategoryGroup,
-        //                     BaseUnit: item.BaseUnit,
-        //                 })) || []
-        //             },
-
-        //             // Product Sales Tax Data
-        //             to_ProductSalesTax: {
-        //                 results: req.data.to_ProductSalesTax?.results?.map(item => ({
-        //                     Product: req.data.Product,
-        //                     Country: item.Country,
-        //                     TaxCategory: item.TaxCategory,
-        //                     TaxClassification: item.TaxClassification,
-        //                 })) || []
-        //             },
-
-        //             // Product Procurement Data (Single Entity)
-        //             to_ProductProcurement: {
-        //                 Product: req.data.Product,
-        //                 PurchaseOrderQuantityUnit: req.data.to_ProductProcurement?.PurchaseOrderQuantityUnit || "",
-        //                 VarblPurOrdUnitStatus: req.data.to_ProductProcurement?.VarblPurOrdUnitStatus || "",
-        //                 PurchasingAcknProfile: req.data.to_ProductProcurement?.PurchasingAcknProfile || ""
-        //             }
-        //         };
-
-        //         // Post the payload to the destination
-        //         const response = await prs.post('/A_Product', payload);
-        //         req.data.status = 'Product Created';
-
-        //     } catch (error) {
-        //         console.error('Error while posting Product:', error.message);
-        //         req.data.statusFlag = 'E';
-        //         req.data.status = error.message;
-        //         req.errors(400, error.message);
-        //         if (req.errors) { req.reject(); }
-        //     }
-        // });
-
 
         this.before("SAVE", Material, async (req) => {
 
@@ -217,7 +140,7 @@ class InvCatalogService extends cds.ApplicationService {
 
         this.before("SAVE", Invoice, async (req) => {
 
-            if (req.data.mode === 'email') {
+            if (req.data.mode === 'email' && !req.data.editmode) {
 
                 let logs = [];
                 req.data.logincr = 1;
@@ -286,6 +209,7 @@ class InvCatalogService extends cds.ApplicationService {
                                 schemaName: 'SAP_invoice_schema',
                                 clientId: 'default',
                                 documentType: 'Invoice',
+                                templateId: 'detect',
                                 receivedDate: new Date().toISOString().slice(0, 10),
                                 enrichment: {
                                     sender: { top: 5, type: "businessEntity", subtype: "supplier" },
@@ -302,6 +226,7 @@ class InvCatalogService extends cds.ApplicationService {
                     req.data.to_InvoiceLogs = logs;
                     req.data.createdBy = req.data.senderMail;
                     req.data.modifiedBy = req.data.senderMail;
+                    req.data.editmode = 'true';
                     //
                 } catch (error) {
                     console.error('Document extraction failed:', error.message);
@@ -369,11 +294,13 @@ class InvCatalogService extends cds.ApplicationService {
 
                 }
             } else {
-                req.data.mode = 'manual';
+                if (req.data.mode !== 'email') {
+                    req.data.mode = 'manual';
+                }
                 let logs = [];
                 await threeWayMatch(req, logs);
                 if (req.data.statusFlag === 'S') {
-                await postInvoice(req, logs);
+                    await postInvoice(req, logs);
                 }
             }
         });
@@ -453,6 +380,26 @@ class InvCatalogService extends cds.ApplicationService {
                     return acc;
                 }, {});
 
+                // Populate req.data.Invoice with mapped values
+                const today = new Date();
+                req.data.fiscalYear = new Date(headerFields.documentDate).getFullYear().toString();
+                req.data.documentCurrency_code = headerFields.currencyCode;
+                req.data.documentDate = today.toISOString().split('T')[0];
+                req.data.postingDate = today.toISOString().split('T')[0];
+                req.data.supInvParty = 'SI4849';
+                req.data.invGrossAmount = parseFloat(headerFields.grossAmount);
+                req.data.companyCode = "2910";
+                req.data.to_InvoiceItem = lineItems.map((lineItem, index) => ({
+                    sup_InvoiceItem: (index + 1).toString().padStart(5, "0"),
+                    purchaseOrder: headerFields.purchaseOrderNumber,
+                    purchaseOrderItem: ((index + 1) * 10).toString().padStart(5, "0"),
+                    documentCurrency_code: headerFields.currencyCode,
+                    supInvItemAmount: lineItem.netAmount != null ? parseFloat(lineItem.netAmount) : (parseFloat(lineItem.quantity) || 0) * (parseFloat(lineItem.unitPrice) || 0),
+                    poQuantityUnit: "PC",
+                    quantityPOUnit: parseFloat(lineItem.quantity) || 0,
+                    taxCode: "P0"
+                }));
+
                 //Check Extraction Confidence.
                 if (headerConfidence.purchaseOrderNumber && headerConfidence.purchaseOrderNumber > 0.8) {
                     req.data.logincr = req.data.logincr + 1;
@@ -488,27 +435,6 @@ class InvCatalogService extends cds.ApplicationService {
                     req.data.status = `Low confidence in Gross Amount extraction: ${headerConfidence.grossAmount ?? 0}`;
                     return;
                 }
-
-
-                // Populate req.data.Invoice with mapped values
-                const today = new Date();
-                req.data.fiscalYear = new Date(headerFields.documentDate).getFullYear().toString();
-                req.data.documentCurrency_code = headerFields.currencyCode;
-                req.data.documentDate = today.toISOString().split('T')[0];
-                req.data.postingDate = today.toISOString().split('T')[0];
-                req.data.supInvParty = 'SI4849';
-                req.data.invGrossAmount = parseFloat(headerFields.grossAmount);
-                req.data.companyCode = "2910";
-                req.data.to_InvoiceItem = lineItems.map((lineItem, index) => ({
-                    sup_InvoiceItem: (index + 1).toString().padStart(5, "0"),
-                    purchaseOrder: headerFields.purchaseOrderNumber,
-                    purchaseOrderItem: ((index + 1) * 10).toString().padStart(5, "0"),
-                    documentCurrency_code: headerFields.currencyCode,
-                    supInvItemAmount: lineItem.netAmount != null ? parseFloat(lineItem.netAmount) : (parseFloat(lineItem.quantity) || 0) * (parseFloat(lineItem.unitPrice) || 0),
-                    poQuantityUnit: "PC",
-                    quantityPOUnit: parseFloat(lineItem.quantity) || 0,
-                    taxCode: "P0"
-                }));
 
                 await threeWayMatch(req, logs);
                 if (req.data.statusFlag === 'S') {
@@ -875,6 +801,7 @@ class InvCatalogService extends cds.ApplicationService {
             try {
                 let overallStatus = 'Matched';  // Default status
                 let statusReasons = [];
+                req.data.status = null;
 
                 // Define Tolerance Levels
                 const quantityTolerancePercentage = 0.05; // 5% tolerance
@@ -1042,7 +969,7 @@ class InvCatalogService extends cds.ApplicationService {
                 req.data.logincr++;
                 logs.push({ stepNo: req.data.logincr, logMessage: error.message });
                 console.error("Error in Three-Way Matching:", error);
-                return { req, logincr, logs };
+                return { req, logs };
             }
         }
 
@@ -1066,23 +993,26 @@ class InvCatalogService extends cds.ApplicationService {
                 const payload = {
                     FiscalYear: fiscalYear,
                     CompanyCode: companyCode,
-                    DocumentDate: `/Date(${Date.now()})/`,//`/Date(${new Date(documentDate).getTime()})/`,
-                    PostingDate: `/Date(${Date.now()})/`,//`/Date(${new Date(postingDate).getTime()})/`,
-                    // CreationDate: `/Date(${Date.now()})/`, // Current timestamp
+                    DocumentDate: `/Date(${Date.now()})/`,
+                    PostingDate: `/Date(${Date.now()})/`,
                     SupplierInvoiceIDByInvcgParty: supInvParty,
                     DocumentCurrency: documentCurrency_code,
                     InvoiceGrossAmount: invGrossAmount.toString(),
-                    to_SuplrInvcItemPurOrdRef: to_InvoiceItem.map(item => ({
-                        SupplierInvoiceItem: item.sup_InvoiceItem,
-                        PurchaseOrder: item.purchaseOrder,
-                        PurchaseOrderItem: item.purchaseOrderItem,
-                        TaxCode: item.taxCode,
-                        DocumentCurrency: item.documentCurrency_code || documentCurrency_code,
-                        SupplierInvoiceItemAmount: item.supInvItemAmount.toString(),
-                        PurchaseOrderQuantityUnit: item.poQuantityUnit,
-                        QuantityInPurchaseOrderUnit: item.quantityPOUnit.toString(),
-                    })),
+                    to_SuplrInvcItemPurOrdRef: to_InvoiceItem
+                        .sort((a, b) => a.sup_InvoiceItem.localeCompare(b.sup_InvoiceItem))  // Correct field
+                        .map(item => ({
+                            SupplierInvoiceItem: item.sup_InvoiceItem,
+                            PurchaseOrder: item.purchaseOrder,
+                            PurchaseOrderItem: item.purchaseOrderItem,
+                            TaxCode: item.taxCode,
+                            DocumentCurrency: item.documentCurrency_code || documentCurrency_code,
+                            SupplierInvoiceItemAmount: item.supInvItemAmount.toString(),
+                            PurchaseOrderQuantityUnit: item.poQuantityUnit,
+                            QuantityInPurchaseOrderUnit: item.quantityPOUnit.toString(),
+                        })),
                 };
+
+
                 // Post the payload to the destination
                 const response = await invoiceDest.post('/A_SupplierInvoice', payload);
                 req.data.newInvoice = response.SupplierInvoice;
