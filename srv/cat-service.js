@@ -23,6 +23,7 @@ class InvCatalogService extends cds.ApplicationService {
             PurchaseOrderItem,
             A_MaterialDocumentHeader,
             A_MaterialDocumentItem,
+            BPDetails,
             MediaFile
         } = this.entities;
 
@@ -34,6 +35,7 @@ class InvCatalogService extends cds.ApplicationService {
         const grs = await cds.connect.to('API_MATERIAL_DOCUMENT_SRV');
         const invoiceDest = await cds.connect.to('API_SUPPLIERINVOICE_PROCESS_SRV');
         const prs = await cds.connect.to('API_PRODUCT_SRV');
+        const bps = await cds.connect.to('API_BUSINESS_PARTNER');
         const DocumentExtraction_Dest = await cds.connect.to('DocumentExtraction_Dest');
 
         this.before("NEW", Invoice.drafts, async (req) => {
@@ -1167,6 +1169,109 @@ class InvCatalogService extends cds.ApplicationService {
 
             }
         });
+
+        this.on('READ', BPDetails, async () => {
+            const query = SELECT.from('bp.A_BusinessPartner').where("Customer <> ''").columns(
+                '*',
+                {
+                    ref: ['to_BusinessPartnerAddress'], expand: [
+                        '*',
+                        { ref: ['to_EmailAddress'], expand: ['*'] },
+                        { ref: ['to_MobilePhoneNumber'], expand: ['*'] }
+                    ]
+                }
+            );
+
+            const bpsResult = await bps.run(query);
+
+            return bpsResult.map(bp => {
+                const address = bp.to_BusinessPartnerAddress?.[0] || {};
+                const email = address.to_EmailAddress?.[0]?.EmailAddress || '';
+                const phone = address.to_MobilePhoneNumber?.[0]?.PhoneNumber || '';
+
+                return {
+                    BusinessPartner: bp.BusinessPartner,
+                    Customer: bp.Customer,
+                    BusinessPartnerFullName: bp.BusinessPartnerFullName,
+                    BusinessPartnerCategory: bp.BusinessPartnerCategory,
+                    BusinessPartnerGrouping: bp.BusinessPartnerGrouping,
+                    OrganizationBPName1: bp.OrganizationBPName1,
+                    AddressTimeZone: address.AddressTimeZone,
+                    CityName: address.CityName,
+                    Country: address.Country,
+                    FullName: address.FullName,
+                    HouseNumber: address.HouseNumber,
+                    PostalCode: address.PostalCode,
+                    Region: address.Region,
+                    StreetName: address.StreetName,
+                    EmailAddress: email,
+                    PhoneNumber: phone
+                };
+            });
+        });
+
+        // POST handler letting system generate AddressID
+        this.on('createPartner', async (req) => {
+            const input = req.data;
+        
+            const payload = {
+                BusinessPartner: input.BusinessPartner,
+                Customer: input.Customer,
+                BusinessPartnerCategory: input.BusinessPartnerCategory,
+                BusinessPartnerGrouping: input.BusinessPartnerGrouping,
+                OrganizationBPName1: input.OrganizationBPName1, // or use input.BusinessPartnerFullName
+                BusinessPartnerFullName: input.BusinessPartnerFullName,
+                to_BusinessPartnerAddress: [
+                    {
+                        BusinessPartner: input.BusinessPartner,
+                        AddressTimeZone: input.AddressTimeZone,
+                        CityName: input.CityName,
+                        Country: input.Country,
+                        FullName: input.FullName,
+                        HouseNumber: input.HouseNumber,
+                        PostalCode: input.PostalCode,
+                        Region: input.Region,
+                        StreetName: input.StreetName,
+                        to_EmailAddress: [
+                            {
+                                EmailAddress: input.EmailAddress
+                            }
+                        ],
+                        to_MobilePhoneNumber: [
+                            {
+                                PhoneNumber: input.PhoneNumber
+                            }
+                        ]
+                    }
+                ]
+            };
+        
+            try {
+                await bps.send({
+                    method: 'POST',
+                    path: '/A_BusinessPartner',
+                    data: payload
+                });
+        
+                return {
+                    BusinessPartner: input.BusinessPartner,
+                    Customer: input.Customer,
+                    BusinessPartnerFullName: input.BusinessPartnerFullName,
+                    Message: 'Business Partner created successfully in one request',
+                    Indicator: 'S'
+                };
+            } catch (err) {
+                console.error('Error creating Business Partner:', err.message);
+                return {
+                    BusinessPartner: input.BusinessPartner,
+                    Customer: input.Customer,
+                    BusinessPartnerFullName: input.BusinessPartnerFullName,
+                    Message: 'Error: ' + err.message,
+                    Indicator: 'E'
+                };
+            }
+        });
+        
 
         return super.init();
     }

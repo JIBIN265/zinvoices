@@ -3,6 +3,7 @@ using {sap.common as common} from '../db/common';
 using {CE_PURCHASEORDER_0001 as po} from './external/CE_PURCHASEORDER_0001';
 using {API_MATERIAL_DOCUMENT_SRV as gr} from './external/API_MATERIAL_DOCUMENT_SRV';
 using {API_PRODUCT_SRV as pr} from './external/API_PRODUCT_SRV';
+using {API_BUSINESS_PARTNER as bp} from './external/API_BUSINESS_PARTNER';
 using {Attachments} from '@cap-js/sdm';
 
 service InvCatalogService @(requires: 'authenticated-user') {
@@ -73,8 +74,42 @@ service InvCatalogService @(requires: 'authenticated-user') {
 
     entity Currencies               as projection on common.Currencies;
     entity StatusValues             as projection on persistence.StatusValues;
-    
-    entity MediaFile as projection on persistence.MediaFile;
+
+
+    entity BusinessPartnerDetails   as projection on persistence.BusinessPartnerDetails;
+
+    entity BPDetails                as
+        projection on bp.A_BusinessPartner {
+            *
+        };
+
+    // action createPartner(input : BusinessPartnerDetails) returns BusinessPartnerDetails;
+    action createPartner(BusinessPartner : String,
+                         Customer : String,
+                         BusinessPartnerFullName : String,
+                         BusinessPartnerCategory : String,
+                         BusinessPartnerGrouping : String,
+                         OrganizationBPName1: String,
+
+                         AddressTimeZone : String,
+                         CityName : String,
+                         Country : String,
+                         FullName : String,
+                         HouseNumber : String,
+                         PostalCode : String,
+                         Region : String,
+                         StreetName : String,
+
+                         EmailAddress : String,
+                         PhoneNumber : String) returns {
+        BusinessPartner         : String;
+        Customer                : String;
+        BusinessPartnerFullName : String;
+        Message                 : String;
+        Indicator               : String(1);
+    };
+
+    entity MediaFile                as projection on persistence.MediaFile;
 
     action postInvoice(documentNumber : String,
                        netAmount : String,
@@ -95,19 +130,19 @@ service InvCatalogService @(requires: 'authenticated-user') {
                        senderMail : String,
                        dmsFolder : String,
                        to_Item : many {
-        description : String;
-        netAmount : String;
-        quantity : String;
-        unitPrice : String;
+        description    : String;
+        netAmount      : String;
+        quantity       : String;
+        unitPrice      : String;
         materialNumber : String;
-        unitOfMeasure : String;
-    }) returns {
-        documentId : String(10);
-        invoiceNo : String(10);
-        FiscalYear : String(4);
-        grossAmount : String;
-        message : String;
-        indicator : String(1);
-        url : String;
+        unitOfMeasure  : String;
+    })                                         returns {
+        documentId     : String(10);
+        invoiceNo      : String(10);
+        FiscalYear     : String(4);
+        grossAmount    : String;
+        message        : String;
+        indicator      : String(1);
+        url            : String;
     };
 }

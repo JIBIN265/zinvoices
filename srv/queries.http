@@ -33,6 +33,33 @@ Content-Type: application/json
 }
 
 ### empty object
+GET http://localhost:4004/odata/v4/inv-catalog/BPDetails
+
+### empty object
+POST http://localhost:4004/odata/v4/inv-catalog/createPartner
+Content-Type: application/json
+
+{
+  "BusinessPartner": "29100776",
+  "Customer": "29100776",
+  "BusinessPartnerCategory": "2",
+  "BusinessPartnerGrouping": "BP03",
+  "BusinessPartnerFullName": "John Doe Inc.",
+  "OrganizationBPName1": "John Doe Inc.",
+  "AddressTimeZone": "EST",
+  "CityName": "Toronto",
+  "Country": "CA",
+  "FullName": "John Doe Inc.",
+  "HouseNumber": "123",
+  "PostalCode": "M5J 2N8",
+  "Region": "ON",
+  "StreetName": "Front Street",
+  "EmailAddress": "john@example.com",
+  "PhoneNumber": "+14165551234"
+}
+
+
+### empty object
 POST http://localhost:4004/odata/v4/inv-catalog/MediaFile
 Content-Type: application/json
 
