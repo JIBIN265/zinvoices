@@ -2,8 +2,8 @@ const cds = require('@sap/cds');
 const SequenceHelper = require("./lib/SequenceHelper");
 const FormData = require('form-data');
 const { SELECT } = require('@sap/cds/lib/ql/cds-ql');
-const MAX_RETRIES = 60;
-const RETRY_DELAY_MS = 6000;
+const MAX_RETRIES = 100;
+const RETRY_DELAY_MS = 20000;
 const { uuid } = cds.utils;
 const { Readable, PassThrough } = require("stream");
 const fs = require('fs');
@@ -243,6 +243,110 @@ class InvCatalogService extends cds.ApplicationService {
                 }
 
             }
+
+            else if (req.data.template === true && req.data.editmode) {
+
+                let logs = [];
+                req.data.logincr = 1;
+                logs.push({
+                    stepNo: req.data.logincr,
+                    logMessage: 'Recieved Attachments from Email: ' + req.data.senderMail,
+                });
+
+                req.data.logincr++;
+                logs.push({
+                    stepNo: req.data.logincr,
+                    logMessage: 'Added attachments to new Document ID:' + req.data.documentId,
+                });
+
+                req.data.logincr++;
+                logs.push({
+                    stepNo: req.data.logincr,
+                    logMessage: 'Attachment send for Document Extraction',
+                });
+
+                //retrieve attachments
+
+                const dms = await cds.connect.to('DocumentStore');
+                try {
+                    const folderResponse = await dms.get(
+                        `/root?objectId=${req.data.dmsFolder}`
+                    );
+
+                    let attachments = [];
+                    for (const obj of folderResponse.objects) {
+                        const objectId = obj.object.properties["cmis:objectId"].value;
+                        const mimeType = obj.object.properties["cmis:contentStreamMimeType"]?.value || "application/octet-stream";
+                        const filename = obj.object.properties["cmis:contentStreamFileName"]?.value || "unknown";
+                        ;
+
+                        const destination = { destinationName: 'sap_process_automation_document_store' }
+
+                        const url = `/root?cmisselector=content&objectId=${objectId}`;
+                        const getResponse = await executeHttpRequest(
+                            destination,
+                            {
+                                url,
+                                method: "GET",
+                                responseType: "arraybuffer",
+                            }
+                        );
+
+                        let fileBuffer;
+                        fileBuffer = Buffer.from(getResponse.data);
+
+                        if (fileBuffer) {
+
+                            attachments.push({
+                                content: fileBuffer,
+                                mimeType: mimeType,
+                                filename: filename,
+                                folderId: req.data.dmsFolder
+                            });
+
+                            // const extractionResults = await processFileBuffer(fileBuffer, req);
+                            // Creating form data
+                            const form = new FormData();
+                            form.append('file', fileBuffer, filename || 'file', mimeType || 'application/octet-stream');
+
+                            const options = {
+                                schemaName: 'SAP_invoice_schema',
+                                clientId: 'default',
+                                documentType: 'Invoice',
+                                templateId: 'detect',
+                                receivedDate: new Date().toISOString().slice(0, 10),
+                                enrichment: {
+                                    sender: { top: 5, type: "businessEntity", subtype: "supplier" },
+                                    employee: { type: "employee" }
+                                }
+                            };
+                            form.append('options', JSON.stringify(options));
+
+                            const extractionResults = await processFileBuffer(form, req, logs);
+
+                        }
+                    }
+                    req.data.attachments = attachments; // NEED TO INSERT INTO DRAFTS AND DELETE FROM CURRENT DMS LOCATION.
+                    req.data.to_InvoiceLogs = logs;
+                    req.data.createdBy = req.data.senderMail;
+                    req.data.modifiedBy = req.data.senderMail;
+                    req.data.editmode = 'true';
+                    //
+                } catch (error) {
+                    console.error('Document extraction failed:', error.message);
+                    req.data.statusFlag = 'E';
+                    req.data.status = error.message;
+                    req.data.logincr + 1;
+                    logs.push({
+                        stepNo: req.data.logincr,
+                        logMessage: error.message,
+                    });
+                    req.data.to_InvoiceLogs = logs;
+                }
+
+            }
+
+
             else if (!req.data.fiscalYear) {
 
                 req.data.logincr = 1;
@@ -325,6 +429,8 @@ class InvCatalogService extends cds.ApplicationService {
                             'Content-Length': form.getLengthSync()
                         }
                     });
+
+                    req.data.url = `https://yk2lt6xsylvfx4dz.us10.doc.cloud.sap/ui?clientId=default#/invoiceviewer&/iv/detailDetail/${extractionResponse.id}/TwoColumnsBeginExpanded`;                    
 
                     if (extractionResponse.status === 'PENDING') {
                         // Poll for results

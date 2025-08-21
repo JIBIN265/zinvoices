@@ -27,6 +27,12 @@ entity InvoiceEntity : cuid, managed, {
   senderMail             : String(40);
   logincr                : Integer;
   editmode               : String(5); // for knowing resubmission of failed invoices
+  url                    : String;
+  template : Boolean @title: 'Template'
+  @UI.fieldGroup: [{ qualifier: 'AdminData', position: 40 }]
+  @UI.lineItem:   [{ position: 40 }]
+  @UI.selectionField: true
+  @UI.control: { value: 'sap.m.Switch' };
   statusColor            : Association to one StatusValues
                              on statusColor.code = statusFlag;
   newInvoice             : String(10);

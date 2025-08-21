@@ -66,6 +66,17 @@ annotate service.Invoice with @(
                 Value: PaymentTerms,
                 Label: '{i18n>PaymentTerms}',
             },
+            {
+                $Type: 'UI.DataFieldWithUrl',
+                Label: '{i18n>DocumentAI}',
+                Url  : url,
+                Value: '{i18n>ViewDocument}'
+            },
+            {
+                $Type: 'UI.DataField',
+                Value: template,
+                Label: '{i18n>Template}'
+            }
         ],
     },
     UI.Facets                                   : [
@@ -84,8 +95,8 @@ annotate service.Invoice with @(
         {
             $Type : 'UI.ReferenceFacet',
             Label : '{i18n>InvoiceLogs}',
-            ID : 'i18nInvoiceLog',
-            Target : 'to_InvoiceLogs/@UI.SelectionPresentationVariant#i18nInvoiceLog',
+            ID    : 'i18nInvoiceLog',
+            Target: 'to_InvoiceLogs/@UI.SelectionPresentationVariant#i18nInvoiceLog',
         },
     ],
     UI.LineItem                                 : [
@@ -93,8 +104,9 @@ annotate service.Invoice with @(
             $Type                : 'UI.DataField',
             Label                : '{i18n>DocumentId}',
             Value                : documentId,
-            
-            ![@HTML5.CssDefaults]: {width: '150px', },
+
+            ![@HTML5.CssDefaults]: {width: '150px',
+            },
         },
         {
             $Type                    : 'UI.DataField',
@@ -158,8 +170,8 @@ annotate service.Invoice with @(
             Label : '{i18n>copy}',
         },
         {
-            $Type : 'UI.DataField',
-            Value : mode,
+            $Type: 'UI.DataField',
+            Value: mode,
         },
     ],
     UI.HeaderFacets                             : [{
@@ -167,7 +179,7 @@ annotate service.Invoice with @(
         Label : '{i18n>AdminData}',
         ID    : 'i18nAdmionData',
         Target: '@UI.FieldGroup#i18nAdmionData',
-    }, ],
+    }],
     UI.FieldGroup #i18nAdmionData               : {
         $Type: 'UI.FieldGroupType',
         Data : [
@@ -209,7 +221,8 @@ annotate service.Invoice with @(
         $Type              : 'UI.SelectionPresentationVariantType',
         PresentationVariant: {
             $Type         : 'UI.PresentationVariantType',
-            Visualizations: ['@UI.LineItem', ],
+            Visualizations: ['@UI.LineItem',
+            ],
         },
         SelectionVariant   : {
             $Type        : 'UI.SelectionVariantType',
@@ -224,14 +237,16 @@ annotate service.Invoice with @(
             mode,
             statusFlag
         ],
-        DynamicMeasures: ['@Analytics.AggregatedProperty#documentId_sum', ],
+        DynamicMeasures: ['@Analytics.AggregatedProperty#documentId_sum',
+        ],
         Title          : '{i18n>DocumentsBySupplierInvoice}',
     },
     UI.SelectionPresentationVariant #chartView  : {
         $Type              : 'UI.SelectionPresentationVariantType',
         PresentationVariant: {
             $Type         : 'UI.PresentationVariantType',
-            Visualizations: ['@UI.Chart#chartView', ],
+            Visualizations: ['@UI.Chart#chartView',
+            ],
         },
         SelectionVariant   : {
             $Type        : 'UI.SelectionVariantType',
@@ -243,7 +258,8 @@ annotate service.Invoice with @(
         $Type              : 'UI.SelectionPresentationVariantType',
         PresentationVariant: {
             $Type         : 'UI.PresentationVariantType',
-            Visualizations: ['@UI.LineItem', ],
+            Visualizations: ['@UI.LineItem',
+            ],
             SortOrder     : [{
                 $Type     : 'Common.SortOrderType',
                 Property  : documentId,
@@ -269,7 +285,8 @@ annotate service.Invoice with @(
             $Type                : 'UI.DataField',
             Value                : documentId,
             Label                : '{i18n>DocumentId}',
-            ![@HTML5.CssDefaults]: {width: '150px', },
+            ![@HTML5.CssDefaults]: {width: '150px',
+            },
         },
         {
             $Type                    : 'UI.DataField',
@@ -329,15 +346,16 @@ annotate service.Invoice with @(
             Label : '{i18n>copy}',
         },
         {
-            $Type : 'UI.DataField',
-            Value : mode,
+            $Type: 'UI.DataField',
+            Value: mode,
         },
     ],
     UI.SelectionPresentationVariant #tableView1 : {
         $Type              : 'UI.SelectionPresentationVariantType',
         PresentationVariant: {
             $Type         : 'UI.PresentationVariantType',
-            Visualizations: ['@UI.LineItem#tableView', ],
+            Visualizations: ['@UI.LineItem#tableView',
+            ],
             SortOrder     : [{
                 $Type     : 'Common.SortOrderType',
                 Property  : documentId,
@@ -364,7 +382,8 @@ annotate service.Invoice with @(
             $Type                : 'UI.DataField',
             Value                : documentId,
             Label                : '{i18n>DocumentId}',
-            ![@HTML5.CssDefaults]: {width: '150px', },
+            ![@HTML5.CssDefaults]: {width: '150px',
+            },
         },
         {
             $Type                    : 'UI.DataField',
@@ -424,15 +443,16 @@ annotate service.Invoice with @(
             Label : '{i18n>copy}',
         },
         {
-            $Type : 'UI.DataField',
-            Value : mode,
+            $Type: 'UI.DataField',
+            Value: mode,
         },
     ],
     UI.SelectionPresentationVariant #tableView2 : {
         $Type              : 'UI.SelectionPresentationVariantType',
         PresentationVariant: {
             $Type         : 'UI.PresentationVariantType',
-            Visualizations: ['@UI.LineItem#tableView2', ],
+            Visualizations: ['@UI.LineItem#tableView2',
+            ],
             SortOrder     : [{
                 $Type     : 'Common.SortOrderType',
                 Property  : documentId,
@@ -458,7 +478,8 @@ annotate service.Invoice with @(
             $Type                : 'UI.DataField',
             Value                : documentId,
             Label                : '{i18n>DocumentId}',
-            ![@HTML5.CssDefaults]: {width: '150px', },
+            ![@HTML5.CssDefaults]: {width: '150px',
+            },
         },
         {
             $Type                    : 'UI.DataField',
@@ -518,15 +539,16 @@ annotate service.Invoice with @(
             Label : '{i18n>copy}',
         },
         {
-            $Type : 'UI.DataField',
-            Value : mode,
+            $Type: 'UI.DataField',
+            Value: mode,
         },
     ],
     UI.SelectionPresentationVariant #tableView3 : {
         $Type              : 'UI.SelectionPresentationVariantType',
         PresentationVariant: {
             $Type         : 'UI.PresentationVariantType',
-            Visualizations: ['@UI.LineItem#tableView3', ],
+            Visualizations: ['@UI.LineItem#tableView3',
+            ],
             SortOrder     : [{
                 $Type     : 'Common.SortOrderType',
                 Property  : documentId,
@@ -552,7 +574,8 @@ annotate service.Invoice with @(
             $Type                : 'UI.DataField',
             Value                : documentId,
             Label                : '{i18n>DocumentId}',
-            ![@HTML5.CssDefaults]: {width: '150px', },
+            ![@HTML5.CssDefaults]: {width: '150px',
+            },
         },
         {
             $Type                    : 'UI.DataField',
@@ -612,15 +635,16 @@ annotate service.Invoice with @(
             Label : '{i18n>copy}',
         },
         {
-            $Type : 'UI.DataField',
-            Value : mode,
+            $Type: 'UI.DataField',
+            Value: mode,
         },
     ],
     UI.SelectionPresentationVariant #tableView4 : {
         $Type              : 'UI.SelectionPresentationVariantType',
         PresentationVariant: {
             $Type         : 'UI.PresentationVariantType',
-            Visualizations: ['@UI.LineItem#tableView4', ],
+            Visualizations: ['@UI.LineItem#tableView4',
+            ],
             SortOrder     : [{
                 $Type     : 'Common.SortOrderType',
                 Property  : documentId,
@@ -650,94 +674,92 @@ annotate service.Invoice with @(
     },
 );
 
-annotate service.InvoiceItem with @(UI.LineItem #ItemDetails: [
-    {
-        $Type: 'UI.DataField',
-        Value: purchaseOrder,
-        Label: '{i18n>PurchaseOrder}',
-    },
-    {
-        $Type: 'UI.DataField',
-        Value: purchaseOrderItem,
-        Label: 'PO Item',
-    },
-    {
-        $Type: 'UI.DataField',
-        Value: poQuantityUnit,
-        Label: '{i18n>UnitOfMeasure}',
-    },
-    {
-        $Type: 'UI.DataField',
-        Value: quantityPOUnit,
-        Label: '{i18n>Quantity}',
-    },
-    {
-        $Type: 'UI.DataField',
-        Value: sup_InvoiceItem,
-        Label: '{i18n>InvoiceItem}',
-    },
-    {
-        $Type: 'UI.DataField',
-        Value: supInvItemAmount,
-        Label: 'Invoice Item Amount',
-    },
-    {
-        $Type: 'UI.DataField',
-        Value: taxCode,
-        Label: '{i18n>TaxCode}',
-    },
-    {
-        $Type: 'UI.DataField',
-        Value: Plant,
-        Label: '{i18n>Plant}',
-    },
-    {
-        $Type: 'UI.DataField',
-        Value: ProductType,
-        Label: '{i18n>ProductType}',
-    },
-    {
-        $Type: 'UI.DataField',
-        Value: TaxJurisdiction,
-        Label: '{i18n>TaxJurisdiction}',
-    },
-    {
-        $Type: 'UI.DataField',
-        Value: referenceDocument,
-        Label: '{i18n>ReferenceDocument}',
-    },
-    {
-        $Type: 'UI.DataField',
-        Value: refDocFiscalYear,
-        Label: '{i18n>RefDocFiscalYear}',
-    },
-    {
-        $Type: 'UI.DataField',
-        Value: refDocItem,
-        Label: '{i18n>RefDocItem}',
-    },
-],
-    UI.SelectionPresentationVariant #ItemDetails : {
-        $Type : 'UI.SelectionPresentationVariantType',
-        PresentationVariant : {
-            $Type : 'UI.PresentationVariantType',
-            Visualizations : [
-                '@UI.LineItem#ItemDetails',
-            ],
-            SortOrder : [
-                {
-                    $Type : 'Common.SortOrderType',
-                    Property : purchaseOrderItem,
-                    Descending : false,
-                },
-            ],
+annotate service.InvoiceItem with @(
+    UI.LineItem #ItemDetails                    : [
+        {
+            $Type: 'UI.DataField',
+            Value: purchaseOrder,
+            Label: '{i18n>PurchaseOrder}',
         },
-        SelectionVariant : {
-            $Type : 'UI.SelectionVariantType',
-            SelectOptions : [
-            ],
+        {
+            $Type: 'UI.DataField',
+            Value: purchaseOrderItem,
+            Label: 'PO Item',
         },
-    },);
+        {
+            $Type: 'UI.DataField',
+            Value: poQuantityUnit,
+            Label: '{i18n>UnitOfMeasure}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: quantityPOUnit,
+            Label: '{i18n>Quantity}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: sup_InvoiceItem,
+            Label: '{i18n>InvoiceItem}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: supInvItemAmount,
+            Label: 'Invoice Item Amount',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: taxCode,
+            Label: '{i18n>TaxCode}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: Plant,
+            Label: '{i18n>Plant}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: ProductType,
+            Label: '{i18n>ProductType}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: TaxJurisdiction,
+            Label: '{i18n>TaxJurisdiction}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: referenceDocument,
+            Label: '{i18n>ReferenceDocument}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: refDocFiscalYear,
+            Label: '{i18n>RefDocFiscalYear}',
+        },
+        {
+            $Type: 'UI.DataField',
+            Value: refDocItem,
+            Label: '{i18n>RefDocItem}',
+        },
+    ],
+    UI.SelectionPresentationVariant #ItemDetails: {
+        $Type              : 'UI.SelectionPresentationVariantType',
+        PresentationVariant: {
+            $Type         : 'UI.PresentationVariantType',
+            Visualizations: ['@UI.LineItem#ItemDetails',
+            ],
+            SortOrder     : [{
+                $Type     : 'Common.SortOrderType',
+                Property  : purchaseOrderItem,
+                Descending: false,
+            }, ],
+        },
+        SelectionVariant   : {
+            $Type        : 'UI.SelectionVariantType',
+            SelectOptions: [],
+        },
+    },
+);
 
 
 annotate service.Invoice with @Aggregation.ApplySupported: {
@@ -766,17 +788,17 @@ annotate service.Invoice with @Aggregation.ApplySupported: {
 
 annotate service.Invoice with {
     supInvParty      @validation.message: 'Supplier Invoice Party is Mandatory'  @(Common.Label: '{i18n>SupplierInvoiceParty}',
-                                                                                                                                // Common.FieldControl: #Mandatory
-                                                                                                 );
-    documentId       @Common.Label      : '{i18n>DocumentId1}';
-    newInvoice       @Common.Label      : '{i18n>InvoiceNumber}';
+    // Common.FieldControl: #Mandatory
+    );
+    documentId       @Common.Label: '{i18n>DocumentId1}';
+    newInvoice       @Common.Label: '{i18n>InvoiceNumber}';
     companyCode      @validation.message: 'Company Code is Mandatory'            @(Common.Label: '{i18n>CompanyCode}',
-                                                                                                                       // Common.FieldControl: #Mandatory
-                                                                                                 );
+    // Common.FieldControl: #Mandatory
+    );
     fiscalYear       @validation.message: 'Fiscal Year is Mandatory'             @(Common.Label: '{i18n>FiscalYear}',
-                                                                                                                      // Common.FieldControl: #Mandatory
+    // Common.FieldControl: #Mandatory
 
-                                                                                                 );
+    );
     // documentDate      @Common.FieldControl: #Mandatory                             @validation.message: 'Document Date is Mandatory';
     // postingDate       @Common.FieldControl: #Mandatory                             @validation.message: 'Posting Date is Mandatory';
     documentCurrency @( // @Common.FieldControl: #Mandatory                             @(
@@ -809,48 +831,45 @@ annotate service.Currencies with {
         ![@UI.TextArrangement]: #TextFirst,
     }
 };
+
 annotate service.Invoice with {
-    mode @Common.Label : '{i18n>ExtractionMethod}'
+    mode @Common.Label: '{i18n>ExtractionMethod}'
 };
 
 annotate service.Invoice with {
-    statusFlag @Common.Label : '{i18n>Status}'
+    statusFlag @Common.Label: '{i18n>Status}'
 };
 
 annotate service.InvoiceLogs with @(
-    UI.LineItem #i18nInvoiceLog : [
+    UI.LineItem #i18nInvoiceLog                    : [
         {
-            $Type : 'UI.DataField',
-            Value : stepNo,
-            Label : '{i18n>StepNo}',
+            $Type: 'UI.DataField',
+            Value: stepNo,
+            Label: '{i18n>StepNo}',
         },
         {
-            $Type : 'UI.DataField',
-            Value : logMessage,
-            Label : '{i18n>LogMessage}',
-            ![@HTML5.CssDefaults]: {width: '1000px', },
+            $Type                : 'UI.DataField',
+            Value                : logMessage,
+            Label                : '{i18n>LogMessage}',
+            ![@HTML5.CssDefaults]: {width: '1000px',
+            },
         },
     ],
-    UI.SelectionPresentationVariant #i18nInvoiceLog : {
-        $Type : 'UI.SelectionPresentationVariantType',
-        PresentationVariant : {
-            $Type : 'UI.PresentationVariantType',
-            Visualizations : [
-                '@UI.LineItem#i18nInvoiceLog',
+    UI.SelectionPresentationVariant #i18nInvoiceLog: {
+        $Type              : 'UI.SelectionPresentationVariantType',
+        PresentationVariant: {
+            $Type         : 'UI.PresentationVariantType',
+            Visualizations: ['@UI.LineItem#i18nInvoiceLog',
             ],
-            SortOrder : [
-                {
-                    $Type : 'Common.SortOrderType',
-                    Property : stepNo,
-                    Descending : false,
-                },
-            ],
+            SortOrder     : [{
+                $Type     : 'Common.SortOrderType',
+                Property  : stepNo,
+                Descending: false,
+            }, ],
         },
-        SelectionVariant : {
-            $Type : 'UI.SelectionVariantType',
-            SelectOptions : [
-            ],
+        SelectionVariant   : {
+            $Type        : 'UI.SelectionVariantType',
+            SelectOptions: [],
         },
     },
 );
-
